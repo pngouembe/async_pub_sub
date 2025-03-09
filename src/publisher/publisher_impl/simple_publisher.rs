@@ -1,13 +1,10 @@
-use std::future::Future;
-
 use futures::{
+    future::BoxFuture,
     stream::{self, BoxStream},
-    StreamExt,
+    FutureExt, StreamExt,
 };
 
-use crate::Result;
-
-use super::publisher_trait::Publisher;
+use crate::{Publisher, Result};
 
 pub struct SimplePublisher<Message>
 where
@@ -76,8 +73,8 @@ where
         self.name
     }
 
-    fn publish(&self, message: Message) -> impl Future<Output = Result<()>> {
-        SimplePublisher::publish(self, message)
+    fn publish_event(&self, message: Message) -> BoxFuture<Result<()>> {
+        SimplePublisher::publish(self, message).boxed()
     }
 
     fn get_message_stream(

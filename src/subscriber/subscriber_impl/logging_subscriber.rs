@@ -38,9 +38,10 @@ where
         self.subscriber.subscribe_to(publisher)?;
         self.publisher_name = Some(publisher.get_name());
         log::info!(
-            "({}) <-> ({})",
+            "({}) <-> ({}): {}",
             self.subscriber.get_name(),
             publisher.get_name(),
+            std::any::type_name::<Message>()
         );
         Ok(())
     }

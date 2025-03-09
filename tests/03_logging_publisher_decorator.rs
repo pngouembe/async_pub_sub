@@ -1,5 +1,6 @@
-use std::{fmt::Debug, future::Future};
+use std::fmt::Debug;
 
+use futures::{future::BoxFuture, FutureExt};
 use tokio_pub_sub::{Publisher, Result, SimplePublisher, SimpleSubscriber};
 
 struct LoggingPublisher<P> {
@@ -24,7 +25,7 @@ where
         self.publisher.get_name()
     }
 
-    fn publish(&self, message: Message) -> impl Future<Output = Result<()>> {
+    fn publish_event(&self, message: Message) -> BoxFuture<Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
             let result = self.publisher.publish(message).await;
@@ -37,6 +38,7 @@ where
             );
             result
         }
+        .boxed()
     }
 
     fn get_message_stream(
@@ -59,7 +61,7 @@ async fn test_logging_publisher() -> Result<()> {
     subscriber.subscribe_to(&mut publisher)?;
 
     // -- Exec
-    publisher.publish(42).await?;
+    publisher.publish_event(42).await?;
     let message = subscriber.receive().await;
 
     // -- Check
