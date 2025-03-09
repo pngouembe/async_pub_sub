@@ -52,10 +52,7 @@ where
         self.subscriber_name = Some(subscriber_name);
 
         Ok(stream::unfold(receiver, |mut receiver| async move {
-            match receiver.recv().await {
-                Some(message) => Some((message, receiver)),
-                None => None,
-            }
+            receiver.recv().await.map(|message| (message, receiver))
         })
         .boxed())
     }
