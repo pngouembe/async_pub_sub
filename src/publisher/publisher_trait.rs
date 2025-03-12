@@ -37,3 +37,12 @@ where
         subscriber_name: &'static str,
     ) -> Result<BoxStream<'static, Message>>;
 }
+
+pub trait PublisherLayer<InnerPublisherType, Message>
+where
+    InnerPublisherType: Publisher<Message>,
+    Message: Send + 'static,
+{
+    type PublisherType: Publisher<Message>;
+    fn layer(&self, publisher: InnerPublisherType) -> Self::PublisherType;
+}
