@@ -102,7 +102,7 @@ impl Subscriber<ServiceRequest> for Service {
 }
 
 #[test_log::test(tokio::test)]
-async fn test_multiple_publishers() -> Result<()> {
+async fn test_direct_rpc() -> Result<()> {
     // -- Setup & Fixtures
     let mut publisher = LoggingPublisher::new("publisher", 1);
     let mut service = Service::new();

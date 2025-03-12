@@ -56,7 +56,7 @@ impl Publisher<String> for Service {
 }
 
 #[test_log::test(tokio::test)]
-async fn test_multiple_publishers() -> Result<()> {
+async fn test_pub_sub_wrapper() -> Result<()> {
     // -- Setup & Fixtures
     let mut publisher = LoggingPublisher::new("publisher", 1);
     let mut subscriber = SimpleSubscriber::new("subscriber");
