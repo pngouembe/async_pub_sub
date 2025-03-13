@@ -1,7 +1,9 @@
+use std::pin::Pin;
+
 use futures::{
     future::BoxFuture,
-    stream::{self, BoxStream},
-    FutureExt, StreamExt,
+    stream::{self},
+    FutureExt, Stream,
 };
 
 use crate::{Publisher, Result};
@@ -38,7 +40,7 @@ where
     pub fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<BoxStream<'static, Message>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
         let Some(receiver) = self.receiver.take() else {
             return Err(format!(
                 "{} publisher can only be bound to one subscriber (already bound to {})",
@@ -51,10 +53,10 @@ where
 
         self.subscriber_name = Some(subscriber_name);
 
-        Ok(stream::unfold(receiver, |mut receiver| async move {
-            receiver.recv().await.map(|message| (message, receiver))
-        })
-        .boxed())
+        Ok(Box::pin(stream::unfold(
+            receiver,
+            |mut receiver| async move { receiver.recv().await.map(|message| (message, receiver)) },
+        )))
     }
 
     pub fn get_name(&self) -> &'static str {
@@ -77,7 +79,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<BoxStream<'static, Message>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
         SimplePublisher::get_message_stream(self, subscriber_name)
     }
 }

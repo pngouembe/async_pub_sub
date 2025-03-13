@@ -1,3 +1,6 @@
+use std::pin::Pin;
+
+use futures::Stream;
 use tokio_pub_sub::{LoggingPublisher, Publisher, Result, SimpleSubscriber, Subscriber};
 
 struct Service {
@@ -50,7 +53,7 @@ impl Publisher<String> for Service {
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<futures::stream::BoxStream<'static, String>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = String> + Send + Sync + 'static>>> {
         self.publisher.get_message_stream(subscriber_name)
     }
 }

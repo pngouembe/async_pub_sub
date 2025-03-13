@@ -1,8 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, pin::Pin};
 
 use futures::{
-    stream::{self, BoxStream, SelectAll},
-    FutureExt, StreamExt,
+    stream::{self, SelectAll},
+    FutureExt, Stream, StreamExt,
 };
 
 use crate::{Publisher, Result, Subscriber};
@@ -13,7 +13,7 @@ where
     Message: Display + Send + 'static,
 {
     name: &'static str,
-    messages: Option<SelectAll<BoxStream<'static, Message>>>,
+    messages: Option<SelectAll<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>>>,
 }
 
 impl<Message> LoggingForwarder<Message>
@@ -52,7 +52,7 @@ where
 
 impl<Message> Publisher<Message> for LoggingForwarder<Message>
 where
-    Message: Display + Send + 'static,
+    Message: Display + Send + Sync + 'static,
 {
     fn get_name(&self) -> &'static str {
         self.name
@@ -65,17 +65,16 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<BoxStream<'static, Message>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
         // todo: Fix the unwrap
         let messages = self.messages.take().unwrap();
         let name = self.name;
 
-        let stream = stream::unfold(messages, move |mut messages| async move {
+        let stream = Box::pin(stream::unfold(messages, move |mut messages| async move {
             let message = messages.select_next_some().await;
             log::info!("[{}] -> [{}]: {}", name, subscriber_name, message);
             Some((message, messages))
-        })
-        .boxed();
+        }));
 
         log::info!(
             "({}) <-> ({}): {}",

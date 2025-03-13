@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, pin::Pin};
 
-use futures::{future::BoxFuture, FutureExt};
+use futures::{future::BoxFuture, FutureExt, Stream};
 
 use crate::{Publisher, Request, Result, SimplePublisher};
 
@@ -89,7 +89,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<futures::stream::BoxStream<'static, Message>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
         let stream = self.publisher.get_message_stream(subscriber_name)?;
         self.subscriber_name = Some(subscriber_name);
         log::info!(

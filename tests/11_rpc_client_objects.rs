@@ -5,6 +5,43 @@ use tokio_pub_sub::{
     SimpleSubscriber,
 };
 
+struct RpcClient<P> {
+    publisher: P,
+}
+
+impl<P> RpcClient<P> {
+    pub fn new(publisher: P) -> Self
+    where
+        P: Publisher<Functions>,
+    {
+        Self { publisher }
+    }
+
+    pub async fn add_one(&self, value: i32) -> Result<i32>
+    where
+        P: Publisher<Functions>,
+    {
+        let (request, response) = Request::<i32, i32>::new(value);
+        self.publisher
+            .publish_event(Functions::AddOne(request))
+            .await?;
+        let response = response.await?;
+        Ok(response)
+    }
+
+    pub async fn prefix_with_bar(&self, string: String) -> Result<String>
+    where
+        P: Publisher<Functions>,
+    {
+        let (request, response) = Request::<String, String>::new(string);
+        self.publisher
+            .publish_event(Functions::PrefixWithBar(request))
+            .await?;
+        let response = response.await?;
+        Ok(response)
+    }
+}
+
 #[derive(Debug)]
 enum Functions {
     AddOne(Request<i32, i32>),
@@ -14,40 +51,6 @@ enum Functions {
 impl Display for Functions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-struct RpcClient<P>
-where
-    P: Publisher<Functions>,
-{
-    publisher: P,
-}
-
-impl<P> RpcClient<P>
-where
-    P: Publisher<Functions>,
-{
-    pub fn new(publisher: P) -> Self {
-        Self { publisher }
-    }
-
-    pub async fn add_one(&self, value: i32) -> Result<i32> {
-        let (request, response) = Request::<i32, i32>::new(value);
-        self.publisher
-            .publish_event(Functions::AddOne(request))
-            .await?;
-        let response = response.await?;
-        Ok(response)
-    }
-
-    pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
-        let (request, response) = Request::<String, String>::new(string);
-        self.publisher
-            .publish_event(Functions::PrefixWithBar(request))
-            .await?;
-        let response = response.await?;
-        Ok(response)
     }
 }
 

@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, pin::Pin};
 
-use futures::{future::BoxFuture, stream::BoxStream, FutureExt};
+use futures::{future::BoxFuture, FutureExt, Stream};
 use tokio_pub_sub::{Publisher, PublisherLayer, Result, SimpleSubscriber};
 
 struct LoggingPublisherLayer;
@@ -60,7 +60,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<BoxStream<'static, Message>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
         self.subscriber_name = Some(subscriber_name);
         self.publisher.get_message_stream(subscriber_name)
     }

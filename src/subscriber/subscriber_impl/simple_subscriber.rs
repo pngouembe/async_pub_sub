@@ -1,9 +1,6 @@
-use std::future::Future;
+use std::{future::Future, pin::Pin};
 
-use futures::{
-    stream::{BoxStream, SelectAll},
-    StreamExt,
-};
+use futures::{stream::SelectAll, Stream, StreamExt};
 
 use crate::{Publisher, Result, Subscriber};
 
@@ -12,7 +9,7 @@ where
     Message: Send + 'static,
 {
     name: &'static str,
-    messages: SelectAll<BoxStream<'static, Message>>,
+    messages: SelectAll<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>>,
 }
 
 impl<Message> SimpleSubscriber<Message>
