@@ -1,0 +1,7 @@
+error: proc-macro derive panicked
+ --> tests/fail/missing_subscriber.rs:3:10
+  |
+3 | #[derive(DeriveSubscriber)]
+  |          ^^^^^^^^^^^^^^^^
+  |
+  = help: message: Struct must have a field that implements the Subscriber trait
