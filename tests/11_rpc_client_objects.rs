@@ -9,18 +9,15 @@ struct RpcClient<P> {
     publisher: P,
 }
 
-impl<P> RpcClient<P> {
-    pub fn new(publisher: P) -> Self
-    where
-        P: Publisher<Functions>,
-    {
+impl<P> RpcClient<P>
+where
+    P: Publisher<Message = Functions>,
+{
+    pub fn new(publisher: P) -> Self {
         Self { publisher }
     }
 
-    pub async fn add_one(&self, value: i32) -> Result<i32>
-    where
-        P: Publisher<Functions>,
-    {
+    pub async fn add_one(&self, value: i32) -> Result<i32> {
         let (request, response) = Request::<i32, i32>::new(value);
         self.publisher
             .publish_event(Functions::AddOne(request))
@@ -29,10 +26,7 @@ impl<P> RpcClient<P> {
         Ok(response)
     }
 
-    pub async fn prefix_with_bar(&self, string: String) -> Result<String>
-    where
-        P: Publisher<Functions>,
-    {
+    pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
         let (request, response) = Request::<String, String>::new(string);
         self.publisher
             .publish_event(Functions::PrefixWithBar(request))

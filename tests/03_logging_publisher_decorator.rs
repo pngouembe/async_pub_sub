@@ -17,10 +17,12 @@ impl<P> LoggingPublisher<P> {
     }
 }
 
-impl<Message> Publisher<Message> for LoggingPublisher<SimplePublisher<Message>>
+impl<Message> Publisher for LoggingPublisher<SimplePublisher<Message>>
 where
     Message: Debug + Send + 'static,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }

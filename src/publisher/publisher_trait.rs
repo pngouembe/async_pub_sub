@@ -6,19 +6,18 @@ use crate::Result;
 
 use super::publisher_types::Request;
 
-pub trait Publisher<Message>
-where
-    Message: Send + 'static,
-{
+pub trait Publisher {
+    type Message: Send + 'static;
+
     fn get_name(&self) -> &'static str;
 
-    fn publish_event(&self, message: Message) -> BoxFuture<Result<()>>;
+    fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>>;
 
     fn publish_request<Req, Rsp>(&self, request: Req) -> BoxFuture<Result<Rsp>>
     where
         Req: Display + Send + 'static,
         Rsp: Display + Send + 'static,
-        Message: From<Request<Req, Rsp>>,
+        Self::Message: From<Request<Req, Rsp>>,
         Self: Sync,
     {
         async move {
@@ -35,14 +34,13 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>>;
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>>;
 }
 
-pub trait PublisherLayer<InnerPublisherType, Message>
+pub trait PublisherLayer<InnerPublisherType>
 where
-    InnerPublisherType: Publisher<Message>,
-    Message: Send + 'static,
+    InnerPublisherType: Publisher,
 {
-    type PublisherType: Publisher<Message>;
+    type PublisherType: Publisher;
     fn layer(&self, publisher: InnerPublisherType) -> Self::PublisherType;
 }

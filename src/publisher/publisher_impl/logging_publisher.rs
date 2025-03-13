@@ -24,10 +24,12 @@ where
     }
 }
 
-impl<Message> Publisher<Message> for LoggingPublisher<Message>
+impl<Message> Publisher for LoggingPublisher<Message>
 where
     Message: Display + Send + 'static,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }

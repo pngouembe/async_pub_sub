@@ -64,10 +64,12 @@ where
     }
 }
 
-impl<Message> Publisher<Message> for SimplePublisher<Message>
+impl<Message> Publisher for SimplePublisher<Message>
 where
-    Message: Send + 'static,
+    Message: Send,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.name
     }

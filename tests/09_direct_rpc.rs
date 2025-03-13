@@ -87,12 +87,17 @@ impl Service {
     }
 }
 
-impl Subscriber<ServiceRequest> for Service {
+impl Subscriber for Service {
+    type Message = ServiceRequest;
+
     fn get_name(&self) -> &'static str {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl Publisher<ServiceRequest>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 

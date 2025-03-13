@@ -27,12 +27,17 @@ impl Service {
     }
 }
 
-impl Subscriber<i32> for Service {
+impl Subscriber for Service {
+    type Message = i32;
+
     fn get_name(&self) -> &'static str {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl Publisher<i32>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 
@@ -41,7 +46,9 @@ impl Subscriber<i32> for Service {
     }
 }
 
-impl Publisher<String> for Service {
+impl Publisher for Service {
+    type Message = String;
+
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }

@@ -26,15 +26,20 @@ where
     }
 }
 
-impl<Message> Subscriber<Message> for LoggingSubscriber<Message>
+impl<Message> Subscriber for LoggingSubscriber<Message>
 where
     Message: Display + Send + 'static,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl Publisher<Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)?;
         self.publisher_name = Some(publisher.get_name());
         log::info!(

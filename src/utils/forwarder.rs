@@ -28,15 +28,20 @@ where
     }
 }
 
-impl<Message> Subscriber<Message> for LoggingForwarder<Message>
+impl<Message> Subscriber for LoggingForwarder<Message>
 where
     Message: Display + Send + 'static,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl Publisher<Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
         // todo: Fix the unwrap
@@ -50,10 +55,12 @@ where
     }
 }
 
-impl<Message> Publisher<Message> for LoggingForwarder<Message>
+impl<Message> Publisher for LoggingForwarder<Message>
 where
     Message: Display + Send + Sync + 'static,
 {
+    type Message = Message;
+
     fn get_name(&self) -> &'static str {
         self.name
     }

@@ -9,18 +9,15 @@ struct RpcServer<S> {
     subscriber: S,
 }
 
-impl<S> RpcServer<S> {
-    pub fn new(subscriber: S) -> Self
-    where
-        S: Subscriber<Functions>,
-    {
+impl<S> RpcServer<S>
+where
+    S: Subscriber<Message = Functions>,
+{
+    pub fn new(subscriber: S) -> Self {
         Self { subscriber }
     }
 
-    pub async fn run(mut self) -> Result<()>
-    where
-        S: Subscriber<Functions>,
-    {
+    pub async fn run(mut self) -> Result<()> {
         loop {
             let request = self.subscriber.receive().await;
             match request {
