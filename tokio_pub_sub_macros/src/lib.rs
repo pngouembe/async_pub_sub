@@ -1,4 +1,5 @@
 mod helpers;
+mod publisher;
 mod subscriber;
 
 use proc_macro::TokenStream;
@@ -8,4 +9,10 @@ use syn::parse_macro_input;
 pub fn derive_subscriber(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     subscriber::derive_subscriber_impl(input)
+}
+
+#[proc_macro_derive(DerivePublisher)]
+pub fn derive_publisher(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    publisher::derive_publisher_impl(input)
 }
