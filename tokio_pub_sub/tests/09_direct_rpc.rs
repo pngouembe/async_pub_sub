@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use tokio_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
+use tokio_pub_sub::{
+    LoggingPublisher, MultiPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber,
+};
 
 #[derive(Debug, PartialEq)]
 struct Foo(i32);
@@ -94,10 +96,7 @@ impl Subscriber for Service {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 

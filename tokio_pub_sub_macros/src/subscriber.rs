@@ -44,7 +44,7 @@ pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
 
                 fn subscribe_to(
                     &mut self,
-                    publisher: &mut impl tokio_pub_sub::Publisher<Message = Self::Message>,
+                    publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
                 ) -> tokio_pub_sub::Result<()> {
                     self.#field_name.subscribe_to(publisher)
                 }

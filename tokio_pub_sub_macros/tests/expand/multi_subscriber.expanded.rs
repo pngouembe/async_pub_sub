@@ -19,7 +19,7 @@ where
     }
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl tokio_pub_sub::Publisher<Message = Self::Message>,
+        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
     ) -> tokio_pub_sub::Result<()> {
         self.subscriber_a.subscribe_to(publisher)
     }
@@ -38,7 +38,7 @@ where
     }
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl tokio_pub_sub::Publisher<Message = Self::Message>,
+        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
     ) -> tokio_pub_sub::Result<()> {
         self.subscriber_b.subscribe_to(publisher)
     }

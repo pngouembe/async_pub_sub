@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Publisher, Result, Subscriber};
+use crate::{MultiPublisher, Result, Subscriber};
 
 use super::SimpleSubscriber;
 
@@ -36,10 +36,7 @@ where
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)?;
         self.publisher_name = Some(publisher.get_name());
         log::info!(

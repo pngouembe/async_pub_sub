@@ -1,7 +1,11 @@
+// TODO: rework the test
+
 use std::pin::Pin;
 
 use futures::Stream;
-use tokio_pub_sub::{LoggingPublisher, Publisher, Result, SimpleSubscriber, Subscriber};
+use tokio_pub_sub::{
+    LoggingPublisher, MultiPublisher, Publisher, Result, SimpleSubscriber, Subscriber,
+};
 
 struct Service {
     subscriber: SimpleSubscriber<i32>,
@@ -22,7 +26,7 @@ impl Service {
     pub async fn run(&mut self) -> Result<()> {
         loop {
             let message = self.subscriber.receive().await;
-            self.publisher.publish_event(message.to_string()).await?;
+            Publisher::publish_event(&self.publisher, message.to_string()).await?;
         }
     }
 }
@@ -34,10 +38,7 @@ impl Subscriber for Service {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 
@@ -50,18 +51,18 @@ impl Publisher for Service {
     type Message = String;
 
     fn get_name(&self) -> &'static str {
-        self.publisher.get_name()
+        Publisher::get_name(&self.publisher)
     }
 
     fn publish_event(&self, message: String) -> futures::future::BoxFuture<Result<()>> {
-        self.publisher.publish_event(message)
+        Publisher::publish_event(&self.publisher, message)
     }
 
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
     ) -> Result<Pin<Box<dyn Stream<Item = String> + Send + Sync + 'static>>> {
-        self.publisher.get_message_stream(subscriber_name)
+        Publisher::get_message_stream(&mut self.publisher, subscriber_name)
     }
 }
 
@@ -80,7 +81,7 @@ async fn test_pub_sub_wrapper() -> Result<()> {
     });
 
     // -- Exec
-    publisher.publish_event(42).await?;
+    Publisher::publish_event(&publisher, 42).await?;
 
     let message = subscriber.receive().await;
 

@@ -1,11 +1,10 @@
 use std::{fmt::Display, pin::Pin};
 
+use crate::{MultiPublisher, Publisher, Result, Subscriber};
 use futures::{
     stream::{self, SelectAll},
     FutureExt, Stream, StreamExt,
 };
-
-use crate::{Publisher, Result, Subscriber};
 
 // todo: create logging forwarder using a middleware pattern
 pub struct LoggingForwarder<Message>
@@ -38,10 +37,7 @@ where
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
         // todo: Fix the unwrap
@@ -96,9 +92,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{LoggingPublisher, LoggingSubscriber};
-
-    use super::*;
+    use crate::{
+        utils::forwarder::LoggingForwarder, LoggingPublisher, LoggingSubscriber, Publisher,
+        Subscriber,
+    };
 
     #[test_log::test(tokio::test)]
     async fn test_logging_forwarder() {

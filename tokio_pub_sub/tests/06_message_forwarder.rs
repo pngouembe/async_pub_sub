@@ -4,7 +4,9 @@ use futures::{
     stream::{self, SelectAll},
     FutureExt, Stream, StreamExt,
 };
-use tokio_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
+use tokio_pub_sub::{
+    LoggingPublisher, MultiPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber,
+};
 
 // todo: fix the request response logging in the forwarder
 struct LoggingForwarder<Message>
@@ -37,10 +39,7 @@ where
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
         // todo: Fix the unwrap

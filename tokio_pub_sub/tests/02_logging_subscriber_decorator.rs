@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use tokio_pub_sub::{Publisher, Result, SimplePublisher, SimpleSubscriber, Subscriber};
+use tokio_pub_sub::{MultiPublisher, Result, SimplePublisher, SimpleSubscriber, Subscriber};
 
 struct LoggingSubscriber<S> {
     publisher_name: Option<&'static str>,
@@ -25,10 +25,7 @@ where
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)?;
         self.publisher_name = Some(publisher.get_name());
         log::info!(
