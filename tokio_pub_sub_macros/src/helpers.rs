@@ -1,12 +1,13 @@
 use syn::{DeriveInput, GenericParam, Type, TypeParamBound, TypePath};
 
-pub(crate) fn find_subscriber_field<'a>(
+pub(crate) fn find_all_subscriber_fields<'a>(
     fields: &'a syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     input: &'a DeriveInput,
-) -> Option<&'a syn::Field> {
+) -> Vec<&'a syn::Field> {
     fields
         .iter()
-        .find(|field| has_subscriber_bound(field, input))
+        .filter(|field| has_subscriber_bound(field, input))
+        .collect()
 }
 
 fn has_subscriber_bound(field: &syn::Field, input: &DeriveInput) -> bool {
