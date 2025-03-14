@@ -65,13 +65,14 @@ fn is_subscriber_bound(bound: &TypeParamBound) -> bool {
         .unwrap_or(false))
 }
 
-pub(crate) fn find_publisher_field<'a>(
+pub(crate) fn find_all_publisher_fields<'a>(
     fields: &'a syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     input: &'a DeriveInput,
-) -> Option<&'a syn::Field> {
+) -> Vec<&'a syn::Field> {
     fields
         .iter()
-        .find(|field| has_publisher_bound(field, input))
+        .filter(|field| has_publisher_bound(field, input))
+        .collect()
 }
 
 fn has_publisher_bound(field: &syn::Field, input: &DeriveInput) -> bool {
