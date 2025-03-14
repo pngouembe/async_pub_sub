@@ -1,0 +1,7 @@
+error: proc-macro derive panicked
+ --> tests/fail/missing_publisher.rs:3:10
+  |
+3 | #[derive(DerivePublisher)]
+  |          ^^^^^^^^^^^^^^^
+  |
+  = help: message: Struct must have at least one field that implements the Publisher trait
