@@ -30,6 +30,8 @@ mod client {
         where
             P: Publisher<Message = RpcInterfaceFunctions>,
         {
+            type RpcMessage = P::Message;
+
             async fn add_one(&self, value: i32) -> i32 {
                 let (request, response) = Request::new(value);
                 self.publisher
@@ -56,6 +58,8 @@ mod server {
     use tokio_pub_sub_macros::DeriveSubscriber;
 
     pub trait RpcInterface {
+        type RpcMessage: Send + 'static;
+
         async fn add_one(&self, value: i32) -> i32;
         async fn prefix_with_bar(&self, string: String) -> String;
     }
@@ -72,6 +76,8 @@ mod server {
     where
         S: Subscriber,
     {
+        type RpcMessage = S::Message;
+
         async fn add_one(&self, value: i32) -> i32 {
             value + 1
         }
@@ -112,14 +118,22 @@ mod server {
 
                     match request {
                         RpcInterfaceFunctions::AddOne(req) => {
-                            let input = req.content;
-                            let response = self.add_one(input).await;
-                            req.respond(response);
+                            let Request {
+                                content,
+                                response_sender,
+                            } = req;
+
+                            let response = self.add_one(content).await;
+                            let _ = response_sender.send(response);
                         }
                         RpcInterfaceFunctions::PrefixWithBar(req) => {
-                            let input = req.content.clone();
-                            let response = self.prefix_with_bar(input).await;
-                            req.respond(response);
+                            let Request {
+                                content,
+                                response_sender,
+                            } = req;
+
+                            let response = self.prefix_with_bar(content).await;
+                            let _ = response_sender.send(response);
                         }
                     }
                 }

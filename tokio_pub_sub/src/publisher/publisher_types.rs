@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 pub struct Request<Req, Rsp> {
     pub content: Req,
-    response_sender: tokio::sync::oneshot::Sender<Rsp>,
+    pub response_sender: tokio::sync::oneshot::Sender<Rsp>,
 }
 
 impl<Req, Rsp> Request<Req, Rsp> {
