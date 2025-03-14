@@ -12,7 +12,7 @@ pub fn derive_subscriber(input: TokenStream) -> TokenStream {
     subscriber::derive_subscriber_impl(input)
 }
 
-#[proc_macro_derive(DerivePublisher)]
+#[proc_macro_derive(DerivePublisher, attributes(publisher))]
 pub fn derive_publisher(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     publisher::derive_publisher_impl(input)

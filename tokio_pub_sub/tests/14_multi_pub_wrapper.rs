@@ -1,10 +1,11 @@
-use tokio_pub_sub::{MultiPublisher, Publisher, Result, SimplePublisher, SimpleSubscriber};
+use tokio_pub_sub::{MultiPublisher, Result, SimplePublisher, SimpleSubscriber};
+use tokio_pub_sub_macros::DerivePublisher;
 
-// TODO: update DerivePublisher macro to support this use case
-// TODO: update DerivePublisher macro to allow to indicate concrete publisher with a macro attribute
-
+#[derive(DerivePublisher)]
 struct MultiPub {
+    #[publisher(i32)]
     publisher_a: SimplePublisher<i32>,
+    #[publisher(String)]
     publisher_b: SimplePublisher<String>,
 }
 
@@ -17,26 +18,6 @@ impl MultiPub {
     }
 }
 
-impl MultiPublisher<i32> for MultiPub {
-    fn get_publisher(&self) -> &impl Publisher<Message = i32> {
-        &self.publisher_a
-    }
-
-    fn get_publisher_mut(&mut self) -> &mut impl Publisher<Message = i32> {
-        &mut self.publisher_a
-    }
-}
-
-impl MultiPublisher<String> for MultiPub {
-    fn get_publisher(&self) -> &impl Publisher<Message = String> {
-        &self.publisher_b
-    }
-
-    fn get_publisher_mut(&mut self) -> &mut impl Publisher<Message = String> {
-        &mut self.publisher_b
-    }
-}
-
 #[tokio::test]
 async fn test_multi_pub() -> Result<()> {
     let mut subscriber1 = SimpleSubscriber::<i32>::new("subscriber1");
@@ -45,6 +26,14 @@ async fn test_multi_pub() -> Result<()> {
     let mut publisher = MultiPub::new();
     subscriber1.subscribe_to(&mut publisher)?;
     subscriber2.subscribe_to(&mut publisher)?;
+
+    publisher.publish_event(42).await?;
+    let message = subscriber1.receive().await;
+    assert_eq!(message, 42);
+
+    publisher.publish_event("toto".to_string()).await?;
+    let message = subscriber2.receive().await;
+    assert_eq!(message, "toto");
 
     Ok(())
 }

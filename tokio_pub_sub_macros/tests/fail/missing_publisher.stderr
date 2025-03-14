@@ -4,4 +4,4 @@ error: proc-macro derive panicked
 3 | #[derive(DerivePublisher)]
   |          ^^^^^^^^^^^^^^^
   |
-  = help: message: Struct must have at least one field that implements the Publisher trait
+  = help: message: Struct must have at least one field that implements the Publisher trait or is marked with #[publisher]

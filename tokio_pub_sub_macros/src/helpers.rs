@@ -1,3 +1,5 @@
+use proc_macro2::TokenStream;
+use quote::quote;
 use syn::{DeriveInput, GenericParam, Type, TypeParamBound, TypePath};
 
 pub(crate) fn find_all_subscriber_fields<'a>(
@@ -69,11 +71,45 @@ fn is_subscriber_bound(bound: &TypeParamBound) -> bool {
 pub(crate) fn find_all_publisher_fields<'a>(
     fields: &'a syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     input: &'a DeriveInput,
-) -> Vec<&'a syn::Field> {
+) -> Vec<(&'a syn::Field, TokenStream)> {
     fields
         .iter()
-        .filter(|field| has_publisher_bound(field, input))
+        .filter_map(|field| {
+            if has_publisher_bound(field, input) {
+                Some((field, get_generic_publisher_message_type(field)))
+            } else if has_publisher_attribute(field) {
+                Some((field, get_concrete_publisher_message_type(field)))
+            } else {
+                None
+            }
+        })
         .collect()
+}
+
+fn get_generic_publisher_message_type(field: &syn::Field) -> TokenStream {
+    let type_param = if let Type::Path(TypePath { path, .. }) = &field.ty {
+        path.segments
+            .first()
+            .map(|s| &s.ident)
+            .expect("Invalid field type")
+    } else {
+        panic!("Invalid field type")
+    };
+
+    quote! { <#type_param as tokio_pub_sub::Publisher>::Message }.into()
+}
+
+fn get_concrete_publisher_message_type(field: &syn::Field) -> TokenStream {
+    if let Some(attr) = field
+        .attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("publisher"))
+    {
+        attr.parse_args()
+            .expect("Expected a type parameter for #[publisher]")
+    } else {
+        panic!("Should not call this function on a field that is not decorated with the publisher attribute")
+    }
 }
 
 fn has_publisher_bound(field: &syn::Field, input: &DeriveInput) -> bool {
@@ -93,6 +129,13 @@ fn has_publisher_bound(field: &syn::Field, input: &DeriveInput) -> bool {
     } else {
         false
     }
+}
+
+fn has_publisher_attribute(field: &syn::Field) -> bool {
+    field
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("publisher"))
 }
 
 fn check_publisher_trait_bounds(type_param: &syn::TypeParam, input: &DeriveInput) -> bool {
