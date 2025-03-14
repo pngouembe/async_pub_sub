@@ -1,7 +1,15 @@
-use server::RpcInterface;
 use tokio_pub_sub::{Result, SimplePublisher, SimpleSubscriber, Subscriber};
 
+mod interface {
+    use tokio_pub_sub_macros::rpc_interface;
+    #[rpc_interface]
+    pub trait RpcInterface {
+        async fn add_one(&self, value: i32) -> i32;
+        async fn prefix_with_bar(&self, string: String) -> String;
+    }
+}
 mod client {
+    use super::interface::{RpcInterfaceClient, RpcInterfaceMessage};
     use tokio_pub_sub::Publisher;
     use tokio_pub_sub_macros::DerivePublisher;
 
@@ -13,54 +21,13 @@ mod client {
         pub publisher: P,
     }
 
-    mod generated {
-        // this should be generated
-
-        use tokio_pub_sub::{Publisher, Request};
-
-        use crate::server::RpcInterface;
-        use crate::server::RpcInterfaceFunctions;
-
-        use super::RpcClient;
-
-        // this should be generated with a declarative macro
-        impl<P> RpcInterface for RpcClient<P>
-        where
-            P: Publisher<Message = RpcInterfaceFunctions>,
-        {
-            type RpcMessage = P::Message;
-
-            async fn add_one(&self, value: i32) -> i32 {
-                let (request, response) = Request::new(value);
-                self.publisher
-                    .publish_event(RpcInterfaceFunctions::AddOne(request))
-                    .await
-                    .unwrap();
-                response.await.unwrap()
-            }
-
-            async fn prefix_with_bar(&self, string: String) -> String {
-                let (request, response) = Request::new(string);
-                self.publisher
-                    .publish_event(RpcInterfaceFunctions::PrefixWithBar(request))
-                    .await
-                    .unwrap();
-                response.await.unwrap()
-            }
-        }
-    }
+    impl<P> RpcInterfaceClient for RpcClient<P> where P: Publisher<Message = RpcInterfaceMessage> {}
 }
 
 mod server {
+    use super::RpcInterface;
     use tokio_pub_sub::Subscriber;
-    use tokio_pub_sub_macros::{rpc_interface, DeriveSubscriber};
-
-    pub trait RpcInterface {
-        type RpcMessage: Send + 'static;
-
-        async fn add_one(&self, value: i32) -> i32;
-        async fn prefix_with_bar(&self, string: String) -> String;
-    }
+    use tokio_pub_sub_macros::DeriveSubscriber;
 
     #[derive(DeriveSubscriber)]
     pub struct RpcServer<S>
@@ -70,13 +37,10 @@ mod server {
         pub subscriber: S,
     }
 
-    #[rpc_interface]
     impl<S> RpcInterface for RpcServer<S>
     where
         S: Subscriber,
     {
-        type RpcMessage = <S as Subscriber>::Message;
-
         async fn add_one(&self, value: i32) -> i32 {
             value + 1
         }
@@ -86,6 +50,9 @@ mod server {
         }
     }
 }
+
+use interface::RpcInterface;
+use interface::RpcInterfaceServer;
 
 #[test_log::test(tokio::test)]
 async fn test_rpc_macros() -> Result<()> {
