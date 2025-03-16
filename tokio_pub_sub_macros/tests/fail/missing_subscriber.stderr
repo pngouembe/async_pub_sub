@@ -4,4 +4,4 @@ error: proc-macro derive panicked
 3 | #[derive(DeriveSubscriber)]
   |          ^^^^^^^^^^^^^^^^
   |
-  = help: message: Struct must have at least one field that implements the Subscriber trait
+  = help: message: Struct must have at least one field that implements the Subscriber trait or is marked with #[subscriber]

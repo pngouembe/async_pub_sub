@@ -5,10 +5,18 @@ use syn::{DeriveInput, GenericParam, Type, TypeParamBound, TypePath};
 pub(crate) fn find_all_subscriber_fields<'a>(
     fields: &'a syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     input: &'a DeriveInput,
-) -> Vec<&'a syn::Field> {
+) -> Vec<(&'a syn::Field, TokenStream)> {
     fields
         .iter()
-        .filter(|field| has_subscriber_bound(field, input))
+        .filter_map(|field| {
+            if has_subscriber_bound(field, input) {
+                Some((field, get_generic_subscriber_message_type(field)))
+            } else if has_subscriber_attribute(field) {
+                Some((field, get_concrete_subscriber_message_type(field)))
+            } else {
+                None
+            }
+        })
         .collect()
 }
 
@@ -66,6 +74,39 @@ fn is_subscriber_bound(bound: &TypeParamBound) -> bool {
     matches!(bound, TypeParamBound::Trait(t) if t.path.segments.last()
         .map(|s| s.ident == "Subscriber")
         .unwrap_or(false))
+}
+
+fn has_subscriber_attribute(field: &syn::Field) -> bool {
+    field
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("subscriber"))
+}
+
+fn get_generic_subscriber_message_type(field: &syn::Field) -> TokenStream {
+    let type_param = if let Type::Path(TypePath { path, .. }) = &field.ty {
+        path.segments
+            .first()
+            .map(|s| &s.ident)
+            .expect("Invalid field type")
+    } else {
+        panic!("Invalid field type")
+    };
+
+    quote! { <#type_param as tokio_pub_sub::Subscriber>::Message }.into()
+}
+
+fn get_concrete_subscriber_message_type(field: &syn::Field) -> TokenStream {
+    if let Some(attr) = field
+        .attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("subscriber"))
+    {
+        attr.parse_args()
+            .expect("Expected a type parameter for #[subscriber]")
+    } else {
+        panic!("Should not call this function on a field that is not decorated with the subscriber attribute")
+    }
 }
 
 pub(crate) fn find_all_publisher_fields<'a>(

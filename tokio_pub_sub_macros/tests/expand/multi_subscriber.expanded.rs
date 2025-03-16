@@ -8,41 +8,51 @@ where
     subscriber_a: SubA,
     subscriber_b: SubB,
 }
-impl<SubA, SubB> tokio_pub_sub::Subscriber for TestSubscriber<SubA, SubB>
+impl<
+    SubA,
+    SubB,
+> tokio_pub_sub::MultiSubscriber<<SubA as tokio_pub_sub::Subscriber>::Message>
+for TestSubscriber<SubA, SubB>
 where
     SubA: Subscriber,
     SubB: Subscriber,
 {
-    type Message = <SubA as tokio_pub_sub::Subscriber>::Message;
-    fn get_name(&self) -> &'static str {
-        self.subscriber_a.get_name()
+    fn get_subscriber(
+        &self,
+    ) -> &impl tokio_pub_sub::Subscriber<
+        Message = <SubA as tokio_pub_sub::Subscriber>::Message,
+    > {
+        &self.subscriber_a
     }
-    fn subscribe_to(
+    fn get_subscriber_mut(
         &mut self,
-        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
-    ) -> tokio_pub_sub::Result<()> {
-        self.subscriber_a.subscribe_to(publisher)
-    }
-    fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
-        self.subscriber_a.receive()
+    ) -> &mut impl tokio_pub_sub::Subscriber<
+        Message = <SubA as tokio_pub_sub::Subscriber>::Message,
+    > {
+        &mut self.subscriber_a
     }
 }
-impl<SubA, SubB> tokio_pub_sub::Subscriber for TestSubscriber<SubA, SubB>
+impl<
+    SubA,
+    SubB,
+> tokio_pub_sub::MultiSubscriber<<SubB as tokio_pub_sub::Subscriber>::Message>
+for TestSubscriber<SubA, SubB>
 where
     SubA: Subscriber,
     SubB: Subscriber,
 {
-    type Message = <SubB as tokio_pub_sub::Subscriber>::Message;
-    fn get_name(&self) -> &'static str {
-        self.subscriber_b.get_name()
+    fn get_subscriber(
+        &self,
+    ) -> &impl tokio_pub_sub::Subscriber<
+        Message = <SubB as tokio_pub_sub::Subscriber>::Message,
+    > {
+        &self.subscriber_b
     }
-    fn subscribe_to(
+    fn get_subscriber_mut(
         &mut self,
-        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
-    ) -> tokio_pub_sub::Result<()> {
-        self.subscriber_b.subscribe_to(publisher)
-    }
-    fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
-        self.subscriber_b.receive()
+    ) -> &mut impl tokio_pub_sub::Subscriber<
+        Message = <SubB as tokio_pub_sub::Subscriber>::Message,
+    > {
+        &mut self.subscriber_b
     }
 }
