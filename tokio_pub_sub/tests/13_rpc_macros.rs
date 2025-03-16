@@ -65,7 +65,9 @@ async fn test_rpc_macros() -> Result<()> {
 
     rpc_server.subscribe_to(&mut rpc_client)?;
 
-    tokio::spawn(async move { rpc_server.run().await });
+    let future = async move { rpc_server.run().await };
+
+    tokio::spawn(future);
 
     assert_eq!(rpc_client.add_one(42).await, 43);
 

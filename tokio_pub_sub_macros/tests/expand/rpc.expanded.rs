@@ -13,7 +13,7 @@ pub enum RpcInterfaceMessage {
     GetToto(tokio_pub_sub::Request<(), String>),
     SetTata(tokio_pub_sub::Request<String, ()>),
 }
-pub trait RpcInterfaceClient: tokio_pub_sub::Publisher<Message = RpcInterfaceMessage> {
+pub trait RpcInterfaceClient: tokio_pub_sub::MultiPublisher<RpcInterfaceMessage> {
     async fn add_one(&self, value: i32) -> i32 {
         let (request, response) = tokio_pub_sub::Request::new(value);
         self.publish_event(RpcInterfaceMessage::AddOne(request)).await.unwrap();
@@ -60,44 +60,48 @@ where
         <Self as RpcInterfaceClient>::set_tata(self, tata).await
     }
 }
-pub trait RpcInterfaceServer: tokio_pub_sub::Subscriber<
-        Message = RpcInterfaceMessage,
+pub trait RpcInterfaceServer: tokio_pub_sub::MultiSubscriber<
+        RpcInterfaceMessage,
     > + RpcInterface {
     async fn run(&mut self) {
         loop {
-            match self.receive().await {
-                RpcInterfaceMessage::AddOne(req) => {
-                    let tokio_pub_sub::Request { content, response_sender } = req;
-                    let response = <Self as RpcInterface>::add_one(self, content).await;
-                    let _ = response_sender.send(response);
-                }
-                RpcInterfaceMessage::Add(req) => {
-                    let tokio_pub_sub::Request { content, response_sender } = req;
-                    let (left, right) = content;
-                    let response = <Self as RpcInterface>::add(self, left, right).await;
-                    let _ = response_sender.send(response);
-                }
-                RpcInterfaceMessage::PrefixWithBar(req) => {
-                    let tokio_pub_sub::Request { content, response_sender } = req;
-                    let response = <Self as RpcInterface>::prefix_with_bar(self, content)
-                        .await;
-                    let _ = response_sender.send(response);
-                }
-                RpcInterfaceMessage::GetToto(req) => {
-                    let tokio_pub_sub::Request { content, response_sender } = req;
-                    let response = <Self as RpcInterface>::get_toto(self).await;
-                    let _ = response_sender.send(response);
-                }
-                RpcInterfaceMessage::SetTata(req) => {
-                    let tokio_pub_sub::Request { content, response_sender } = req;
-                    let response = <Self as RpcInterface>::set_tata(self, content).await;
-                    let _ = response_sender.send(response);
-                }
+            let request = self.receive().await;
+            self.handle_request(request).await;
+        }
+    }
+    async fn handle_request(&mut self, request: RpcInterfaceMessage) {
+        match request {
+            RpcInterfaceMessage::AddOne(req) => {
+                let tokio_pub_sub::Request { content, response_sender } = req;
+                let response = <Self as RpcInterface>::add_one(self, content).await;
+                let _ = response_sender.send(response);
+            }
+            RpcInterfaceMessage::Add(req) => {
+                let tokio_pub_sub::Request { content, response_sender } = req;
+                let (left, right) = content;
+                let response = <Self as RpcInterface>::add(self, left, right).await;
+                let _ = response_sender.send(response);
+            }
+            RpcInterfaceMessage::PrefixWithBar(req) => {
+                let tokio_pub_sub::Request { content, response_sender } = req;
+                let response = <Self as RpcInterface>::prefix_with_bar(self, content)
+                    .await;
+                let _ = response_sender.send(response);
+            }
+            RpcInterfaceMessage::GetToto(req) => {
+                let tokio_pub_sub::Request { content, response_sender } = req;
+                let response = <Self as RpcInterface>::get_toto(self).await;
+                let _ = response_sender.send(response);
+            }
+            RpcInterfaceMessage::SetTata(req) => {
+                let tokio_pub_sub::Request { content, response_sender } = req;
+                let response = <Self as RpcInterface>::set_tata(self, content).await;
+                let _ = response_sender.send(response);
             }
         }
     }
 }
 impl<T> RpcInterfaceServer for T
 where
-    T: RpcInterface + tokio_pub_sub::Subscriber<Message = RpcInterfaceMessage>,
+    T: RpcInterface + tokio_pub_sub::MultiSubscriber<RpcInterfaceMessage>,
 {}

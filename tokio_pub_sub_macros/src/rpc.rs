@@ -41,18 +41,23 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
             #(#enum_variants)*
         }
 
-        pub trait #client_trait_name: tokio_pub_sub::Publisher<Message = #message_enum_name> {
+        pub trait #client_trait_name: tokio_pub_sub::MultiPublisher<#message_enum_name> {
             #(#client_methods)*
         }
 
         #trait_impl_for_client
 
-        pub trait #server_trait_name: tokio_pub_sub::Subscriber<Message = #message_enum_name> + #trait_name {
+        pub trait #server_trait_name: tokio_pub_sub::MultiSubscriber<#message_enum_name> + #trait_name {
             async fn run(&mut self) {
                 loop {
-                    match self.receive().await {
-                        #(#server_impl)*
-                    }
+                    let request = self.receive().await;
+                    self.handle_request(request).await;
+                }
+            }
+
+            async fn handle_request(&mut self, request: #message_enum_name) {
+                match request {
+                    #(#server_impl)*
                 }
             }
         }
@@ -237,7 +242,7 @@ fn generate_server_trait_impl(
 ) -> proc_macro2::TokenStream {
     quote! {
         impl<T> #server_trait_name for T where
-            T: #trait_name + tokio_pub_sub::Subscriber<Message = #message_enum_name>
+            T: #trait_name + tokio_pub_sub::MultiSubscriber<#message_enum_name>
         {
         }
     }
