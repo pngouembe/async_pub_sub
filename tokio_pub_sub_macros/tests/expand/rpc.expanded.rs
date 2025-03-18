@@ -13,6 +13,41 @@ pub enum RpcInterfaceMessage {
     GetToto(tokio_pub_sub::Request<(), String>),
     SetTata(tokio_pub_sub::Request<String, ()>),
 }
+#[automatically_derived]
+impl ::core::fmt::Debug for RpcInterfaceMessage {
+    #[inline]
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            RpcInterfaceMessage::AddOne(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "AddOne", &__self_0)
+            }
+            RpcInterfaceMessage::Add(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Add", &__self_0)
+            }
+            RpcInterfaceMessage::PrefixWithBar(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "PrefixWithBar",
+                    &__self_0,
+                )
+            }
+            RpcInterfaceMessage::GetToto(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "GetToto",
+                    &__self_0,
+                )
+            }
+            RpcInterfaceMessage::SetTata(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "SetTata",
+                    &__self_0,
+                )
+            }
+        }
+    }
+}
 pub trait RpcInterfaceClient: tokio_pub_sub::MultiPublisher<RpcInterfaceMessage> {
     async fn add_one(&self, value: i32) -> i32 {
         let (request, response) = tokio_pub_sub::Request::new(value);

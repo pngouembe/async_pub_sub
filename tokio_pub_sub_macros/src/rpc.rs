@@ -37,6 +37,7 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
     let expanded = quote! {
         #input
 
+        #[derive(Debug)]
         pub enum #message_enum_name {
             #(#enum_variants)*
         }
