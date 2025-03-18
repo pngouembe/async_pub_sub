@@ -46,8 +46,8 @@ where
         Ok(())
     }
 
-    fn receive(&mut self) -> impl std::future::Future<Output = Message> {
-        async move { panic!("LoggingForwarder does not implement receive method") }
+    async fn receive(&mut self) -> Message {
+        panic!("LoggingForwarder does not implement receive method")
     }
 }
 

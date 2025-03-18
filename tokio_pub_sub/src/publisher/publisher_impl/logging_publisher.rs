@@ -2,7 +2,7 @@ use std::{fmt::Display, pin::Pin};
 
 use futures::{future::BoxFuture, FutureExt, Stream};
 
-use crate::{Publisher, Request, Result, SimplePublisher};
+use crate::{Publisher, Result, SimplePublisher};
 
 pub struct LoggingPublisher<Message>
 where
@@ -46,44 +46,6 @@ where
                 message_str
             );
             result
-        }
-        .boxed()
-    }
-
-    fn publish_request<Req, Rsp>(&self, request: Req) -> BoxFuture<Result<Rsp>>
-    where
-        Req: Display + Send + 'static,
-        Rsp: Display + Send + 'static,
-        Message: From<Request<Req, Rsp>>,
-    {
-        let (request, response) = Request::<Req, Rsp>::new(request);
-        let request_str = format!("{}", &request);
-        let publisher_name = self.publisher.get_name();
-        let subscriber_name = self
-            .subscriber_name
-            .expect("subscriber name should be known");
-
-        async move {
-            self.publisher.publish(request.into()).await.unwrap();
-
-            log::info!(
-                "[{}] -> [{}]: {}",
-                publisher_name,
-                subscriber_name,
-                request_str
-            );
-
-            let response = response.await.unwrap();
-
-            log::info!(
-                "[{}] <- [{}]: {} -> {}",
-                publisher_name,
-                subscriber_name,
-                request_str,
-                response
-            );
-
-            Ok(response)
         }
         .boxed()
     }

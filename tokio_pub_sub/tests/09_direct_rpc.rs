@@ -1,8 +1,6 @@
 use std::fmt::Display;
 
-use tokio_pub_sub::{
-    LoggingPublisher, MultiPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber,
-};
+use tokio_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
 
 #[derive(Debug, PartialEq)]
 struct Foo(i32);
@@ -96,7 +94,10 @@ impl Subscriber for Service {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
+    ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 
@@ -117,14 +118,20 @@ async fn test_direct_rpc() -> Result<()> {
         service.run().await.unwrap();
     });
 
-    // -- Exec
-    let foo_response = publisher.publish_request(Foo(42)).await?;
+    // -- Exec & Check
+    let (request, response) = Request::new(Foo(42));
+    publisher
+        .publish_event(request.into())
+        .await
+        .expect("request published successfully");
+    assert_eq!(response.await.expect("request successul"), 43);
 
-    let bar_response = publisher.publish_request(Bar("hello".to_string())).await?;
-
-    // -- Check
-    assert_eq!(foo_response, 43);
-    assert_eq!(bar_response, "bar: hello");
+    let (request, response) = Request::new(Bar("hello".to_string()));
+    publisher
+        .publish_event(request.into())
+        .await
+        .expect("request published successfully");
+    assert_eq!(response.await.expect("request successul"), "bar: hello");
 
     Ok(())
 }

@@ -1,10 +1,8 @@
-use std::{fmt::Display, pin::Pin};
+use std::pin::Pin;
 
-use futures::{future::BoxFuture, FutureExt, Stream};
+use futures::{future::BoxFuture, Stream};
 
 use crate::Result;
-
-use super::publisher_types::Request;
 
 pub trait Publisher {
     type Message: Send + 'static;
@@ -13,28 +11,33 @@ pub trait Publisher {
 
     fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>>;
 
-    fn publish_request<Req, Rsp>(&self, request: Req) -> BoxFuture<Result<Rsp>>
-    where
-        Req: Display + Send + 'static,
-        Rsp: Display + Send + 'static,
-        Self::Message: From<Request<Req, Rsp>>,
-        Self: Sync,
-    {
-        async move {
-            let (request, response) = Request::<Req, Rsp>::new(request);
+    fn get_message_stream(
+        &mut self,
+        subscriber_name: &'static str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>>;
+}
 
-            self.publish_event(request.into()).await?;
+impl<T> Publisher for T
+where
+    T: std::ops::Deref + std::ops::DerefMut,
+    T::Target: Publisher,
+{
+    type Message = <T::Target as Publisher>::Message;
 
-            let response = response.await?;
-            Ok(response)
-        }
-        .boxed()
+    fn get_name(&self) -> &'static str {
+        (**self).get_name()
+    }
+
+    fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+        (**self).publish_event(message)
     }
 
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>>;
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+        (**self).get_message_stream(subscriber_name)
+    }
 }
 
 pub trait PublisherLayer<InnerPublisherType>

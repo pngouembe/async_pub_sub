@@ -93,7 +93,7 @@ fn get_generic_subscriber_message_type(field: &syn::Field) -> TokenStream {
         panic!("Invalid field type")
     };
 
-    quote! { <#type_param as tokio_pub_sub::Subscriber>::Message }.into()
+    quote! { <#type_param as tokio_pub_sub::Subscriber>::Message }
 }
 
 fn get_concrete_subscriber_message_type(field: &syn::Field) -> TokenStream {
@@ -137,7 +137,7 @@ fn get_generic_publisher_message_type(field: &syn::Field) -> TokenStream {
         panic!("Invalid field type")
     };
 
-    quote! { <#type_param as tokio_pub_sub::Publisher>::Message }.into()
+    quote! { <#type_param as tokio_pub_sub::Publisher>::Message }
 }
 
 fn get_concrete_publisher_message_type(field: &syn::Field) -> TokenStream {

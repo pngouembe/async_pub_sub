@@ -10,8 +10,12 @@ async fn test_request_publisher() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let response = publisher.publish_request(42).await;
-        assert_eq!(response.expect("request successul"), 43);
+        let (request, response) = Request::new(42);
+        publisher
+            .publish_event(request)
+            .await
+            .expect("request published successfully");
+        assert_eq!(response.await.expect("request successul"), 43);
     });
 
     let subscriber_task = tokio::spawn(async move {

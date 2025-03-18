@@ -4,9 +4,7 @@ use futures::{
     stream::{self, SelectAll},
     FutureExt, Stream, StreamExt,
 };
-use tokio_pub_sub::{
-    LoggingPublisher, MultiPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber,
-};
+use tokio_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
 
 // todo: fix the request response logging in the forwarder
 struct LoggingForwarder<Message>
@@ -39,7 +37,10 @@ where
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
+    ) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
         // todo: Fix the unwrap
@@ -48,8 +49,8 @@ where
         Ok(())
     }
 
-    fn receive(&mut self) -> impl std::future::Future<Output = Message> {
-        async move { panic!("LoggingForwarder does not implement receive method") }
+    async fn receive(&mut self) -> Message {
+        panic!("LoggingForwarder does not implement receive method")
     }
 }
 
@@ -104,8 +105,12 @@ async fn test_message_forwarder() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let response = publisher.publish_request(42).await;
-        assert_eq!(response.expect("request successul"), 43);
+        let (request, response) = Request::new(42);
+        publisher
+            .publish_event(request)
+            .await
+            .expect("request published successfully");
+        assert_eq!(response.await.expect("request successul"), 43);
     });
 
     let subscriber_task = tokio::spawn(async move {
