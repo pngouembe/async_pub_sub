@@ -54,7 +54,7 @@ impl TimerService {
                 log::info!("[{}] notifying data customer in {}s", NAME, second_count);
                 tokio::time::sleep(Duration::from_secs(second_count)).await;
                 self.data_consumer_publisher
-                    .publish_event(DataConsumerTimerNotification)
+                    .publish(DataConsumerTimerNotification)
                     .await
                     .unwrap();
             }
@@ -67,7 +67,7 @@ impl TimerService {
                 log::info!("[{}] notifying data producer in {}s", NAME, second_count);
                 tokio::time::sleep(Duration::from_secs(second_count)).await;
                 self.data_producer_publisher
-                    .publish_event(DataProducerTimerNotification)
+                    .publish(DataProducerTimerNotification)
                     .await
                     .unwrap();
             }
@@ -80,7 +80,7 @@ impl TimerService {
                 log::info!("[{}] notifying data cache in {}s", NAME, second_count);
                 tokio::time::sleep(Duration::from_secs(second_count)).await;
                 self.cache_publisher
-                    .publish_event(CacheTimerNotification)
+                    .publish(CacheTimerNotification)
                     .await
                     .unwrap();
             }

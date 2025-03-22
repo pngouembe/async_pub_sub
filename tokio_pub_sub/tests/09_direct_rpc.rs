@@ -121,14 +121,14 @@ async fn test_direct_rpc() -> Result<()> {
     // -- Exec & Check
     let (request, response) = Request::new(Foo(42));
     publisher
-        .publish_event(request.into())
+        .publish(request.into())
         .await
         .expect("request published successfully");
     assert_eq!(response.await.expect("request successul"), 43);
 
     let (request, response) = Request::new(Bar("hello".to_string()));
     publisher
-        .publish_event(request.into())
+        .publish(request.into())
         .await
         .expect("request published successfully");
     assert_eq!(response.await.expect("request successul"), "bar: hello");

@@ -27,7 +27,7 @@ where
         self.publisher.get_name()
     }
 
-    fn publish_event(&self, message: Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Message) -> BoxFuture<Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
             let result = self.publisher.publish(message).await;
@@ -63,7 +63,7 @@ async fn test_logging_publisher() -> Result<()> {
     subscriber.subscribe_to(&mut publisher)?;
 
     // -- Exec
-    publisher.publish_event(42).await?;
+    publisher.publish(42).await?;
     let message = subscriber.receive().await;
 
     // -- Check

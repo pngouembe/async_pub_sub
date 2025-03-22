@@ -41,10 +41,10 @@ where
         self.publisher.get_name()
     }
 
-    fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
-            let result = self.publisher.publish_event(message).await;
+            let result = self.publisher.publish(message).await;
             log::info!(
                 "[{}] -> [{}]: {}",
                 self.publisher.get_name(),

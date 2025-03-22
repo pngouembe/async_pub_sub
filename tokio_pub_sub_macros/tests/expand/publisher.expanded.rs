@@ -6,13 +6,13 @@ struct TestPublisherA<P: Publisher> {
 impl<P: Publisher> tokio_pub_sub::Publisher for TestPublisherA<P> {
     type Message = <P as tokio_pub_sub::Publisher>::Message;
     fn get_name(&self) -> &'static str {
-        self.publisher_a.get_name()
+        tokio_pub_sub::Publisher::get_name(&self.publisher_a)
     }
-    fn publish_event(
+    fn publish(
         &self,
         message: Self::Message,
     ) -> futures::future::BoxFuture<tokio_pub_sub::Result<()>> {
-        self.publisher_a.publish_event(message)
+        tokio_pub_sub::Publisher::publish(&self.publisher_a, message)
     }
     fn get_message_stream(
         &mut self,
@@ -22,7 +22,10 @@ impl<P: Publisher> tokio_pub_sub::Publisher for TestPublisherA<P> {
             Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>,
         >,
     > {
-        self.publisher_a.get_message_stream(subscriber_name)
+        tokio_pub_sub::Publisher::get_message_stream(
+            &mut self.publisher_a,
+            subscriber_name,
+        )
     }
 }
 struct TestPublisherB<P>
@@ -37,13 +40,13 @@ where
 {
     type Message = <P as tokio_pub_sub::Publisher>::Message;
     fn get_name(&self) -> &'static str {
-        self.publisher_b.get_name()
+        tokio_pub_sub::Publisher::get_name(&self.publisher_b)
     }
-    fn publish_event(
+    fn publish(
         &self,
         message: Self::Message,
     ) -> futures::future::BoxFuture<tokio_pub_sub::Result<()>> {
-        self.publisher_b.publish_event(message)
+        tokio_pub_sub::Publisher::publish(&self.publisher_b, message)
     }
     fn get_message_stream(
         &mut self,
@@ -53,6 +56,9 @@ where
             Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>,
         >,
     > {
-        self.publisher_b.get_message_stream(subscriber_name)
+        tokio_pub_sub::Publisher::get_message_stream(
+            &mut self.publisher_b,
+            subscriber_name,
+        )
     }
 }

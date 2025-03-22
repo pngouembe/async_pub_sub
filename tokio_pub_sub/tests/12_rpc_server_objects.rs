@@ -70,13 +70,13 @@ async fn test_rpc_server() -> tokio_pub_sub::Result<()> {
 
     let (add_one_request, add_one_response) = Request::new(42);
     publisher
-        .publish_event(Functions::AddOne(add_one_request))
+        .publish(Functions::AddOne(add_one_request))
         .await?;
     let add_one_response = add_one_response.await?;
 
     let (prefix_with_bar_request, prefix_with_bar_response) = Request::new("hello".to_string());
     publisher
-        .publish_event(Functions::PrefixWithBar(prefix_with_bar_request))
+        .publish(Functions::PrefixWithBar(prefix_with_bar_request))
         .await?;
     let prefix_with_bar_response = prefix_with_bar_response.await?;
 

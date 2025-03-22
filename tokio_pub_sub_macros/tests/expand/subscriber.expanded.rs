@@ -6,16 +6,16 @@ struct TestSubscriberA<A: Subscriber> {
 impl<A: Subscriber> tokio_pub_sub::Subscriber for TestSubscriberA<A> {
     type Message = <A as tokio_pub_sub::Subscriber>::Message;
     fn get_name(&self) -> &'static str {
-        self.subscriber_a.get_name()
+        tokio_pub_sub::Subscriber::get_name(&self.subscriber_a)
     }
     fn subscribe_to(
         &mut self,
         publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
     ) -> tokio_pub_sub::Result<()> {
-        self.subscriber_a.subscribe_to(publisher)
+        tokio_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_a, publisher)
     }
     fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
-        self.subscriber_a.receive()
+        tokio_pub_sub::Subscriber::receive(&mut self.subscriber_a)
     }
 }
 struct TestSubscriberB<B>
@@ -30,15 +30,15 @@ where
 {
     type Message = <B as tokio_pub_sub::Subscriber>::Message;
     fn get_name(&self) -> &'static str {
-        self.subscriber_b.get_name()
+        tokio_pub_sub::Subscriber::get_name(&self.subscriber_b)
     }
     fn subscribe_to(
         &mut self,
         publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>,
     ) -> tokio_pub_sub::Result<()> {
-        self.subscriber_b.subscribe_to(publisher)
+        tokio_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_b, publisher)
     }
     fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
-        self.subscriber_b.receive()
+        tokio_pub_sub::Subscriber::receive(&mut self.subscriber_b)
     }
 }

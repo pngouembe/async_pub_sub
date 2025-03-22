@@ -10,7 +10,7 @@ async fn test_pub_sub_i32() -> Result<()> {
     subscriber.subscribe_to(&mut publisher)?;
 
     // -- Exec
-    publisher.publish_event(42).await?;
+    publisher.publish(42).await?;
     let message = subscriber.receive().await;
 
     // -- Check

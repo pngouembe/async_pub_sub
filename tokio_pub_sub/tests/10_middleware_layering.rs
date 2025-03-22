@@ -39,10 +39,10 @@ where
         self.publisher.get_name()
     }
 
-    fn publish_event(&self, message: Self::Message) -> BoxFuture<tokio_pub_sub::Result<()>> {
+    fn publish(&self, message: Self::Message) -> BoxFuture<tokio_pub_sub::Result<()>> {
         async move {
             let message_str = format!("{}", &message);
-            let result = self.publisher.publish_event(message).await;
+            let result = self.publisher.publish(message).await;
             log::info!(
                 "[{}] -> [{}]: {}",
                 self.publisher.get_name(),
@@ -75,7 +75,7 @@ async fn test_middleware_wrapping() -> Result<()> {
 
     // -- Exercise
     let message = "Hello, World!";
-    logging_publisher.publish_event(message.to_string()).await?;
+    logging_publisher.publish(message.to_string()).await?;
 
     // -- Verification
     Ok(())

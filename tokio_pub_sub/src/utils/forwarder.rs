@@ -61,7 +61,7 @@ where
         self.name
     }
 
-    fn publish_event(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
         async move { panic!("LoggingForwarder does not implement publish method") }.boxed()
     }
 
@@ -106,7 +106,7 @@ mod tests {
         forwarder.subscribe_to(&mut publisher).unwrap();
         subscriber.subscribe_to(&mut forwarder).unwrap();
 
-        publisher.publish_event("Hello, World!").await.unwrap();
+        publisher.publish("Hello, World!").await.unwrap();
 
         let message = subscriber.receive().await;
         assert_eq!(message, "Hello, World!");

@@ -33,15 +33,15 @@ pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
                 type Message = #message_type;
 
                 fn get_name(&self) -> &'static str {
-                    self.#field_name.get_name()
+                    tokio_pub_sub::Subscriber::get_name(&self.#field_name)
                 }
 
                 fn subscribe_to(&mut self, publisher: &mut impl tokio_pub_sub::MultiPublisher<Self::Message>) -> tokio_pub_sub::Result<()> {
-                    self.#field_name.subscribe_to(publisher)
+                    tokio_pub_sub::Subscriber::subscribe_to(&mut self.#field_name, publisher)
                 }
 
                 fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
-                    self.#field_name.receive()
+                    tokio_pub_sub::Subscriber::receive(&mut self.#field_name)
                 }
             }
         }

@@ -51,27 +51,27 @@ impl ::core::fmt::Debug for RpcInterfaceMessage {
 pub trait RpcInterfaceClient: tokio_pub_sub::MultiPublisher<RpcInterfaceMessage> {
     async fn add_one(&self, value: i32) -> i32 {
         let (request, response) = tokio_pub_sub::Request::new(value);
-        self.publish_event(RpcInterfaceMessage::AddOne(request)).await.unwrap();
+        self.publish(RpcInterfaceMessage::AddOne(request)).await.unwrap();
         response.await.unwrap()
     }
     async fn add(&self, left: i32, right: i32) -> i32 {
         let (request, response) = tokio_pub_sub::Request::new((left, right));
-        self.publish_event(RpcInterfaceMessage::Add(request)).await.unwrap();
+        self.publish(RpcInterfaceMessage::Add(request)).await.unwrap();
         response.await.unwrap()
     }
     async fn prefix_with_bar(&self, string: String) -> String {
         let (request, response) = tokio_pub_sub::Request::new(string);
-        self.publish_event(RpcInterfaceMessage::PrefixWithBar(request)).await.unwrap();
+        self.publish(RpcInterfaceMessage::PrefixWithBar(request)).await.unwrap();
         response.await.unwrap()
     }
     async fn get_toto(&self) -> String {
         let (request, response) = tokio_pub_sub::Request::new(());
-        self.publish_event(RpcInterfaceMessage::GetToto(request)).await.unwrap();
+        self.publish(RpcInterfaceMessage::GetToto(request)).await.unwrap();
         response.await.unwrap()
     }
     async fn set_tata(&mut self, tata: String) {
         let (request, response) = tokio_pub_sub::Request::new(tata);
-        self.publish_event(RpcInterfaceMessage::SetTata(request)).await.unwrap();
+        self.publish(RpcInterfaceMessage::SetTata(request)).await.unwrap();
         response.await.unwrap()
     }
 }

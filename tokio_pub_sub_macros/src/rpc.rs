@@ -138,7 +138,7 @@ fn generate_client_methods<'a>(
         quote! {
             async fn #function_signature {
                 let (request, response) = tokio_pub_sub::Request::new(#request_content);
-                self.publish_event(#message_enum_name::#variant_name(request))
+                self.publish(#message_enum_name::#variant_name(request))
                     .await
                     .unwrap();
                 response.await.unwrap()

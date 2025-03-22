@@ -11,8 +11,8 @@ async fn test_multiple_publishers() -> Result<()> {
     subscriber.subscribe_to(&mut publisher2)?;
 
     // -- Exec
-    publisher1.publish_event("Hello, publisher1").await?;
-    publisher2.publish_event("Hello, publisher2").await?;
+    publisher1.publish("Hello, publisher1").await?;
+    publisher2.publish("Hello, publisher2").await?;
 
     let message1 = subscriber.receive().await;
     let message2 = subscriber.receive().await;

@@ -26,7 +26,7 @@ impl Service {
     pub async fn run(&mut self) -> Result<()> {
         loop {
             let message = self.subscriber.receive().await;
-            Publisher::publish_event(&self.publisher, message.to_string()).await?;
+            Publisher::publish(&self.publisher, message.to_string()).await?;
         }
     }
 }
@@ -54,8 +54,8 @@ impl Publisher for Service {
         Publisher::get_name(&self.publisher)
     }
 
-    fn publish_event(&self, message: String) -> futures::future::BoxFuture<Result<()>> {
-        Publisher::publish_event(&self.publisher, message)
+    fn publish(&self, message: String) -> futures::future::BoxFuture<Result<()>> {
+        Publisher::publish(&self.publisher, message)
     }
 
     fn get_message_stream(
@@ -81,7 +81,7 @@ async fn test_pub_sub_wrapper() -> Result<()> {
     });
 
     // -- Exec
-    Publisher::publish_event(&publisher, 42).await?;
+    Publisher::publish(&publisher, 42).await?;
 
     let message = subscriber.receive().await;
 

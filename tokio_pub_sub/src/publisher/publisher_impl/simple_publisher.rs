@@ -74,7 +74,7 @@ where
         self.name
     }
 
-    fn publish_event(&self, message: Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Message) -> BoxFuture<Result<()>> {
         SimplePublisher::publish(self, message).boxed()
     }
 

@@ -27,11 +27,11 @@ async fn test_multi_pub() -> Result<()> {
     subscriber1.subscribe_to(&mut publisher)?;
     subscriber2.subscribe_to(&mut publisher)?;
 
-    publisher.publish_event(42).await?;
+    publisher.publish(42).await?;
     let message = subscriber1.receive().await;
     assert_eq!(message, 42);
 
-    publisher.publish_event("toto".to_string()).await?;
+    publisher.publish("toto".to_string()).await?;
     let message = subscriber2.receive().await;
     assert_eq!(message, "toto");
 

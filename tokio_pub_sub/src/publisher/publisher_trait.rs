@@ -9,7 +9,7 @@ pub trait Publisher {
 
     fn get_name(&self) -> &'static str;
 
-    fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>>;
+    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>>;
 
     fn get_message_stream(
         &mut self,
@@ -28,8 +28,8 @@ where
         (**self).get_name()
     }
 
-    fn publish_event(&self, message: Self::Message) -> BoxFuture<Result<()>> {
-        (**self).publish_event(message)
+    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+        (**self).publish(message)
     }
 
     fn get_message_stream(
@@ -60,8 +60,8 @@ where
         Publisher::get_name(self.get_publisher())
     }
 
-    fn publish_event(&self, message: Message) -> futures::future::BoxFuture<Result<()>> {
-        Publisher::publish_event(self.get_publisher(), message)
+    fn publish(&self, message: Message) -> futures::future::BoxFuture<Result<()>> {
+        Publisher::publish(self.get_publisher(), message)
     }
 
     fn get_message_stream(

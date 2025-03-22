@@ -19,9 +19,7 @@ where
 
     pub async fn add_one(&self, value: i32) -> Result<i32> {
         let (request, response) = Request::<i32, i32>::new(value);
-        self.publisher
-            .publish_event(Functions::AddOne(request))
-            .await?;
+        self.publisher.publish(Functions::AddOne(request)).await?;
         let response = response.await?;
         Ok(response)
     }
@@ -29,7 +27,7 @@ where
     pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
         let (request, response) = Request::<String, String>::new(string);
         self.publisher
-            .publish_event(Functions::PrefixWithBar(request))
+            .publish(Functions::PrefixWithBar(request))
             .await?;
         let response = response.await?;
         Ok(response)

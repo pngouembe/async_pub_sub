@@ -64,7 +64,7 @@ where
         self.name
     }
 
-    fn publish_event(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
         async move { panic!("LoggingForwarder does not implement publish method") }.boxed()
     }
 
@@ -107,7 +107,7 @@ async fn test_message_forwarder() -> Result<()> {
     let publisher_task = tokio::spawn(async move {
         let (request, response) = Request::new(42);
         publisher
-            .publish_event(request)
+            .publish(request)
             .await
             .expect("request published successfully");
         assert_eq!(response.await.expect("request successul"), 43);

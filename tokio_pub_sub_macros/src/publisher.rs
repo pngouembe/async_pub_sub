@@ -31,22 +31,22 @@ pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
 
         quote! {
             impl #impl_generics tokio_pub_sub::Publisher for #struct_name #ty_generics #where_clause {
-            type Message = #message_type;
+                type Message = #message_type;
 
-            fn get_name(&self) -> &'static str {
-                self.#field_name.get_name()
-            }
+                fn get_name(&self) -> &'static str {
+                    tokio_pub_sub::Publisher::get_name(&self.#field_name)
+                }
 
-            fn publish_event(&self, message: Self::Message) -> futures::future::BoxFuture<tokio_pub_sub::Result<()>> {
-                self.#field_name.publish_event(message)
-            }
+                fn publish(&self, message: Self::Message) -> futures::future::BoxFuture<tokio_pub_sub::Result<()>> {
+                    tokio_pub_sub::Publisher::publish(&self.#field_name, message)
+                }
 
-            fn get_message_stream(
-                &mut self,
-                subscriber_name: &'static str,
-            ) -> tokio_pub_sub::Result<std::pin::Pin<Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>>> {
-                self.#field_name.get_message_stream(subscriber_name)
-            }
+                fn get_message_stream(
+                    &mut self,
+                    subscriber_name: &'static str,
+                ) -> tokio_pub_sub::Result<std::pin::Pin<Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+                    tokio_pub_sub::Publisher::get_message_stream(&mut self.#field_name, subscriber_name)
+                }
             }
         }
     } else {
