@@ -30,3 +30,9 @@ pub fn route(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as route::RouteInput);
     route::generate_route(input)
 }
+
+#[proc_macro]
+pub fn routes(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as route::RoutesInput);
+    route::generate_routes(input)
+}

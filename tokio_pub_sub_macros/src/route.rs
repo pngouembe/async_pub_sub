@@ -40,9 +40,41 @@ pub(crate) fn generate_route(input: RouteInput) -> TokenStream {
         }
     } else {
         quote! {
-            #subscriber.subscribe_to(&mut #publisher)
+            {
+                use tokio_pub_sub::MultiSubscriber;
+                #subscriber.subscribe_to(&mut #publisher)
+            }
         }
     };
 
     output.into()
+}
+
+pub struct RoutesInput {
+    routes: Vec<RouteInput>,
+}
+
+impl Parse for RoutesInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let routes = input
+            .parse_terminated(RouteInput::parse, Token![,])?
+            .into_iter()
+            .collect();
+
+        Ok(RoutesInput { routes })
+    }
+}
+
+pub(crate) fn generate_routes(input: RoutesInput) -> TokenStream {
+    let routes = input.routes.into_iter().map(|route| {
+        let route: proc_macro2::TokenStream = generate_route(route).into();
+        quote! {
+            .and_then(|_| {#route})
+        }
+    });
+
+    quote! {
+        Ok(())#(#routes)*
+    }
+    .into()
 }

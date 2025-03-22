@@ -9,8 +9,8 @@ use data_consumer::DataConsumerService;
 use data_producer::DataProducerService;
 use persistency::PersistencyService;
 use timer::{CacheTimerNotification, TimerService};
-use tokio_pub_sub::{MultiSubscriber, Result};
-use tokio_pub_sub_macros::route;
+use tokio_pub_sub::Result;
+use tokio_pub_sub_macros::routes;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -23,12 +23,14 @@ async fn main() -> Result<()> {
     let mut data_producer_service = DataProducerService::new();
     let mut data_consumer_service = DataConsumerService::new();
 
-    route!(data_consumer_service -> cache_service)?;
-    route!(data_producer_service -> cache_service)?;
-    route!(timer_service -> cache_service: CacheTimerNotification)?;
-    route!(cache_service -> persistency_service)?;
-    route!(timer_service -> data_consumer_service)?;
-    route!(timer_service -> data_producer_service)?;
+    routes!(
+        data_consumer_service -> cache_service,
+        data_producer_service -> cache_service,
+        timer_service -> cache_service: CacheTimerNotification,
+        cache_service -> persistency_service,
+        timer_service -> data_consumer_service,
+        timer_service -> data_producer_service,
+    )?;
 
     tokio::join!(
         cache_service.run(),
