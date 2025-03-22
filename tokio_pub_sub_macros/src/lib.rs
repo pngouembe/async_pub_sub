@@ -1,5 +1,6 @@
 mod helpers;
 mod publisher;
+mod route;
 mod rpc;
 mod subscriber;
 
@@ -22,4 +23,10 @@ pub fn derive_publisher(input: TokenStream) -> TokenStream {
 pub fn rpc_interface(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::Item);
     rpc::generate_rpc_interface(input)
+}
+
+#[proc_macro]
+pub fn route(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as route::RouteInput);
+    route::generate_route(input)
 }

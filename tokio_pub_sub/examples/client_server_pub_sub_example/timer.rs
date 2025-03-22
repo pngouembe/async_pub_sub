@@ -1,33 +1,48 @@
 use std::time::Duration;
 
 use rand::Rng;
-use tokio_pub_sub::{Publisher, SimplePublisher};
+use tokio_pub_sub::{DebugingPublisherLayer, Publisher, PublisherBuilder, SimplePublisher};
 use tokio_pub_sub_macros::DerivePublisher;
 
 const NAME: &str = "Timer";
 
 // TODO: work on the broadcast
 
+#[derive(Debug)]
 pub struct DataConsumerTimerNotification;
+#[derive(Debug)]
 pub struct DataProducerTimerNotification;
+#[derive(Debug)]
 pub struct CacheTimerNotification;
 
 #[derive(DerivePublisher)]
 pub struct TimerService {
     #[publisher(DataConsumerTimerNotification)]
-    data_consumer_publisher: SimplePublisher<DataConsumerTimerNotification>,
+    data_consumer_publisher: Box<dyn Publisher<Message = DataConsumerTimerNotification>>,
     #[publisher(DataProducerTimerNotification)]
-    data_producer_publisher: SimplePublisher<DataProducerTimerNotification>,
+    data_producer_publisher: Box<dyn Publisher<Message = DataProducerTimerNotification>>,
     #[publisher(CacheTimerNotification)]
-    cache_publisher: SimplePublisher<CacheTimerNotification>,
+    cache_publisher: Box<dyn Publisher<Message = CacheTimerNotification>>,
 }
 
 impl TimerService {
     pub fn new() -> Self {
         Self {
-            data_consumer_publisher: SimplePublisher::new(NAME, 10),
-            data_producer_publisher: SimplePublisher::new(NAME, 10),
-            cache_publisher: SimplePublisher::new(NAME, 10),
+            data_consumer_publisher: Box::new(
+                PublisherBuilder::new(SimplePublisher::new(NAME, 10))
+                    .with_layer(DebugingPublisherLayer)
+                    .build(),
+            ),
+            data_producer_publisher: Box::new(
+                PublisherBuilder::new(SimplePublisher::new(NAME, 10))
+                    .with_layer(DebugingPublisherLayer)
+                    .build(),
+            ),
+            cache_publisher: Box::new(
+                PublisherBuilder::new(SimplePublisher::new(NAME, 10))
+                    .with_layer(DebugingPublisherLayer)
+                    .build(),
+            ),
         }
     }
 

@@ -38,13 +38,12 @@ where
     }
 }
 
-impl<Req, Rsp> Debug for Request<Req, Rsp> {
+impl<Req, Rsp> Debug for Request<Req, Rsp>
+where
+    Req: Debug,
+    Rsp: Debug,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Request({}) -> {}",
-            std::any::type_name::<Req>(),
-            std::any::type_name::<Rsp>(),
-        )
+        write!(f, "inputs: {:?}", self.content)
     }
 }

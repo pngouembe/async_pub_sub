@@ -1,4 +1,6 @@
-use tokio_pub_sub::{SimplePublisher, SimpleSubscriber};
+use tokio_pub_sub::{
+    DebugingPublisherLayer, Publisher, PublisherBuilder, SimplePublisher, SimpleSubscriber,
+};
 use tokio_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
 
 use crate::{
@@ -64,13 +66,17 @@ impl CacheInterface for CacheService {
 #[derive(DerivePublisher)]
 pub struct CacheClient {
     #[publisher(CacheInterfaceMessage)]
-    rpc_publisher: SimplePublisher<CacheInterfaceMessage>,
+    rpc_publisher: Box<dyn Publisher<Message = CacheInterfaceMessage>>,
 }
 
 impl CacheClient {
     pub fn new(name: &'static str, buffer_size: usize) -> Self {
         Self {
-            rpc_publisher: SimplePublisher::new(name, buffer_size),
+            rpc_publisher: Box::new(
+                PublisherBuilder::new(SimplePublisher::new(name, buffer_size))
+                    .with_layer(DebugingPublisherLayer)
+                    .build(),
+            ),
         }
     }
 }

@@ -35,8 +35,6 @@ impl DataProducerService {
             self.cache_rpc_client
                 .set_data(format!("{}: counter = {}", NAME, self.counter))
                 .await;
-
-            log::info!("[{}]: counter = {}", NAME, self.counter);
         }
     }
 }
