@@ -1,10 +1,11 @@
 use std::{fmt::Display, pin::Pin};
 
+use async_pub_sub::{Publisher, Request, Result, Subscriber};
 use futures::{
     stream::{self, SelectAll},
     FutureExt, Stream, StreamExt,
 };
-use async_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
+use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 // todo: fix the request response logging in the forwarder
 struct LoggingForwarder<Message>
@@ -96,9 +97,9 @@ where
 #[test_log::test(tokio::test)]
 async fn test_message_forwarder() -> Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = SimpleSubscriber::<Request<i32, i32>>::new("subscriber");
+    let mut subscriber = MpscSubscriber::<Request<i32, i32>>::new("subscriber");
     let mut forwarder = LoggingForwarder::new("forwarder");
-    let mut publisher = LoggingPublisher::new("publisher", 10);
+    let mut publisher = MpscPublisher::new("publisher", 10);
 
     forwarder.subscribe_to(&mut publisher)?;
     subscriber.subscribe_to(&mut forwarder)?;

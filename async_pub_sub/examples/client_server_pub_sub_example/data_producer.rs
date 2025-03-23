@@ -1,5 +1,5 @@
-use async_pub_sub::SimpleSubscriber;
 use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber};
+use tokio_implementations::subscriber::mpsc::MpscSubscriber;
 
 use crate::{
     cache::{CacheClient, CacheInterface, CacheInterfaceMessage},
@@ -14,7 +14,7 @@ pub struct DataProducerService {
     #[publisher(CacheInterfaceMessage)]
     cache_rpc_client: CacheClient,
     #[subscriber(DataProducerTimerNotification)]
-    timer_notification_subscriber: SimpleSubscriber<DataProducerTimerNotification>,
+    timer_notification_subscriber: MpscSubscriber<DataProducerTimerNotification>,
 }
 
 impl DataProducerService {
@@ -22,7 +22,7 @@ impl DataProducerService {
         Self {
             counter: 0,
             cache_rpc_client: CacheClient::new(NAME, 10),
-            timer_notification_subscriber: SimpleSubscriber::new(NAME),
+            timer_notification_subscriber: MpscSubscriber::new(NAME),
         }
     }
 

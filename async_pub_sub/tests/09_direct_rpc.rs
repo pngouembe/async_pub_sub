@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use async_pub_sub::{LoggingPublisher, Publisher, Request, Result, SimpleSubscriber, Subscriber};
+use async_pub_sub::{Request, Result, Subscriber};
+use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 #[derive(Debug, PartialEq)]
 struct Foo(i32);
@@ -45,12 +46,12 @@ impl Display for ServiceRequest {
 }
 
 struct Service {
-    subscriber: SimpleSubscriber<ServiceRequest>,
+    subscriber: MpscSubscriber<ServiceRequest>,
 }
 
 impl Service {
     pub fn new() -> Self {
-        let subscriber = SimpleSubscriber::new("Service");
+        let subscriber = MpscSubscriber::new("Service");
 
         Self { subscriber }
     }
@@ -109,7 +110,7 @@ impl Subscriber for Service {
 #[test_log::test(tokio::test)]
 async fn test_direct_rpc() -> Result<()> {
     // -- Setup & Fixtures
-    let mut publisher = LoggingPublisher::new("publisher", 1);
+    let mut publisher = MpscPublisher::new("publisher", 1);
     let mut service = Service::new();
 
     service.subscribe_to(&mut publisher)?;

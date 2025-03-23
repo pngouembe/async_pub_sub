@@ -2,9 +2,11 @@ use std::{future::Future, pin::Pin};
 
 use futures::{stream::SelectAll, Stream, StreamExt};
 
-use crate::{MultiPublisher, Result, Subscriber};
+use async_pub_sub::{MultiPublisher, Result, Subscriber};
 
-pub struct SimpleSubscriber<Message>
+// TODO: Bring this back to the async_pub_sub crate as it is a generic implementation
+
+pub struct MpscSubscriber<Message>
 where
     Message: Send + 'static,
 {
@@ -12,7 +14,7 @@ where
     messages: SelectAll<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>>,
 }
 
-impl<Message> SimpleSubscriber<Message>
+impl<Message> MpscSubscriber<Message>
 where
     Message: Send + 'static,
 {
@@ -32,7 +34,7 @@ where
     }
 }
 
-impl<Message> Subscriber for SimpleSubscriber<Message>
+impl<Message> Subscriber for MpscSubscriber<Message>
 where
     Message: Send + 'static,
 {
@@ -43,10 +45,10 @@ where
     }
 
     fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
-        SimpleSubscriber::subscribe_to(self, publisher)
+        MpscSubscriber::subscribe_to(self, publisher)
     }
 
     fn receive(&mut self) -> impl Future<Output = Message> {
-        SimpleSubscriber::receive(self)
+        MpscSubscriber::receive(self)
     }
 }

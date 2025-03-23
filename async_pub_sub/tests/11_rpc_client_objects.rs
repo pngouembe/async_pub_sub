@@ -1,9 +1,7 @@
 use std::fmt::Display;
 
-use async_pub_sub::{
-    LoggingPublisherLayer, Publisher, PublisherLayer, Request, Result, SimplePublisher,
-    SimpleSubscriber,
-};
+use async_pub_sub::{LoggingPublisherLayer, Publisher, PublisherLayer, Request, Result};
+use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 struct RpcClient<P> {
     publisher: P,
@@ -49,9 +47,9 @@ impl Display for Functions {
 #[test_log::test(tokio::test)]
 async fn test_rpc_client_layer() -> async_pub_sub::Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = SimpleSubscriber::new("rpc_server");
+    let mut subscriber = MpscSubscriber::new("rpc_server");
     let mut rpc_client =
-        RpcClient::new(LoggingPublisherLayer.layer(SimplePublisher::new("rpc_client", 1)));
+        RpcClient::new(LoggingPublisherLayer.layer(MpscPublisher::new("rpc_client", 1)));
 
     subscriber.subscribe_to(&mut rpc_client.publisher)?;
 

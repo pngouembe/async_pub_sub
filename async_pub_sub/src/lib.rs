@@ -7,8 +7,8 @@ mod error;
 pub use error::{Error, Result};
 
 pub use publisher::{
-    DebugingPublisherLayer, LoggingPublisher, LoggingPublisherLayer, MultiPublisher, Publisher,
-    PublisherBuilder, PublisherLayer, Request, SimplePublisher,
+    DebugingPublisherLayer, LoggingPublisherLayer, MultiPublisher, Publisher, PublisherBuilder,
+    PublisherLayer, Request,
 };
-pub use subscriber::{LoggingSubscriber, MultiSubscriber, SimpleSubscriber, Subscriber};
+pub use subscriber::{MultiSubscriber, Subscriber};
 pub use utils::LoggingForwarder;

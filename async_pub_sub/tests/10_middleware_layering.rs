@@ -1,7 +1,8 @@
 use std::{fmt::Display, pin::Pin};
 
+use async_pub_sub::{Publisher, PublisherLayer, Result};
 use futures::{future::BoxFuture, FutureExt, Stream};
-use async_pub_sub::{Publisher, PublisherLayer, Result, SimpleSubscriber};
+use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 struct LoggingPublisherLayer;
 
@@ -67,10 +68,10 @@ where
 #[test_log::test(tokio::test)]
 async fn test_middleware_wrapping() -> Result<()> {
     // -- Setup & Fixtures
-    let publisher = async_pub_sub::SimplePublisher::new("publisher", 10);
+    let publisher = MpscPublisher::new("publisher", 10);
     let mut logging_publisher = LoggingPublisherLayer.layer(publisher);
 
-    let mut subscriber = SimpleSubscriber::new("subscriber");
+    let mut subscriber = MpscSubscriber::new("subscriber");
     subscriber.subscribe_to(&mut logging_publisher)?;
 
     // -- Exercise

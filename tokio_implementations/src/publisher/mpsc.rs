@@ -6,9 +6,9 @@ use futures::{
     FutureExt, Stream,
 };
 
-use crate::{Publisher, Result};
+use async_pub_sub::{Publisher, Result};
 
-pub struct SimplePublisher<Message>
+pub struct MpscPublisher<Message>
 where
     Message: Send + 'static,
 {
@@ -18,7 +18,7 @@ where
     receiver: Option<tokio::sync::mpsc::Receiver<Message>>,
 }
 
-impl<Message> SimplePublisher<Message>
+impl<Message> MpscPublisher<Message>
 where
     Message: Send + 'static,
 {
@@ -64,7 +64,7 @@ where
     }
 }
 
-impl<Message> Publisher for SimplePublisher<Message>
+impl<Message> Publisher for MpscPublisher<Message>
 where
     Message: Send,
 {
@@ -75,13 +75,13 @@ where
     }
 
     fn publish(&self, message: Message) -> BoxFuture<Result<()>> {
-        SimplePublisher::publish(self, message).boxed()
+        MpscPublisher::publish(self, message).boxed()
     }
 
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
     ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
-        SimplePublisher::get_message_stream(self, subscriber_name)
+        MpscPublisher::get_message_stream(self, subscriber_name)
     }
 }

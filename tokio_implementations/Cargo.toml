@@ -1,0 +1,9 @@
+[package]
+name = "tokio_implementations"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = "0.3.31"
+tokio = "1.44.1"
+async_pub_sub = { path = "../async_pub_sub" }

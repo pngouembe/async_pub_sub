@@ -89,26 +89,3 @@ where
         Ok(stream)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{
-        utils::forwarder::LoggingForwarder, LoggingPublisher, LoggingSubscriber, Publisher,
-        Subscriber,
-    };
-
-    #[test_log::test(tokio::test)]
-    async fn test_logging_forwarder() {
-        let mut forwarder = LoggingForwarder::new("forwarder");
-        let mut publisher = LoggingPublisher::new("publisher", 1);
-        let mut subscriber = LoggingSubscriber::new("subscriber");
-
-        forwarder.subscribe_to(&mut publisher).unwrap();
-        subscriber.subscribe_to(&mut forwarder).unwrap();
-
-        publisher.publish("Hello, World!").await.unwrap();
-
-        let message = subscriber.receive().await;
-        assert_eq!(message, "Hello, World!");
-    }
-}

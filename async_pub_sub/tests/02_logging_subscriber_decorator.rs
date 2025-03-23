@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
-use async_pub_sub::{MultiPublisher, Result, SimplePublisher, SimpleSubscriber, Subscriber};
+use async_pub_sub::{MultiPublisher, Result, Subscriber};
+use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 struct LoggingSubscriber<S> {
     publisher_name: Option<&'static str>,
@@ -16,7 +17,7 @@ impl<S> LoggingSubscriber<S> {
     }
 }
 
-impl<Message> Subscriber for LoggingSubscriber<SimpleSubscriber<Message>>
+impl<Message> Subscriber for LoggingSubscriber<MpscSubscriber<Message>>
 where
     Message: Debug + Send + 'static,
 {
@@ -54,8 +55,8 @@ where
 #[test_log::test(tokio::test)]
 async fn test_logging_subscriber() -> Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = LoggingSubscriber::new(SimpleSubscriber::new("subscriber"));
-    let mut publisher = SimplePublisher::new("publisher", 10);
+    let mut subscriber = LoggingSubscriber::new(MpscSubscriber::new("subscriber"));
+    let mut publisher = MpscPublisher::new("publisher", 10);
 
     subscriber.subscribe_to(&mut publisher)?;
 
