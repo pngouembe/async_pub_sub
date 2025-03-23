@@ -3,4 +3,4 @@
 [workspace]
 resolver = "2"
 
-members = ["tokio_pub_sub", "tokio_pub_sub_macros"]
+members = ["async_pub_sub", "async_pub_sub_macros"]

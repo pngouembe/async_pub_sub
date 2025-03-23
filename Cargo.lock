@@ -99,6 +99,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_pub_sub"
+version = "0.1.0"
+dependencies = [
+ "async_pub_sub_macros",
+ "env_logger",
+ "futures",
+ "log",
+ "rand",
+ "test-log",
+ "tokio",
+]
+
+[[package]]
+name = "async_pub_sub_macros"
+version = "0.1.0"
+dependencies = [
+ "async_pub_sub",
+ "heck",
+ "macrotest",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "tokio",
+ "tokio-test",
+ "trybuild",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -853,34 +881,6 @@ dependencies = [
  "futures-core",
  "tokio",
  "tokio-stream",
-]
-
-[[package]]
-name = "tokio_pub_sub"
-version = "0.1.0"
-dependencies = [
- "env_logger",
- "futures",
- "log",
- "rand",
- "test-log",
- "tokio",
- "tokio_pub_sub_macros",
-]
-
-[[package]]
-name = "tokio_pub_sub_macros"
-version = "0.1.0"
-dependencies = [
- "heck",
- "macrotest",
- "proc-macro2",
- "quote",
- "syn",
- "tokio",
- "tokio-test",
- "tokio_pub_sub",
- "trybuild",
 ]
 
 [[package]]

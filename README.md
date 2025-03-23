@@ -1,4 +1,4 @@
-# tokio_pub_sub
+# async_pub_sub
 
 A library that aims at making the pub sub pattern easy in async rust.
 
