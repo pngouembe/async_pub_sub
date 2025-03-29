@@ -2,12 +2,12 @@ use std::fmt::{Debug, Display};
 
 pub struct Request<Req, Rsp> {
     pub content: Req,
-    pub response_sender: tokio::sync::oneshot::Sender<Rsp>,
+    pub response_sender: futures::channel::oneshot::Sender<Rsp>,
 }
 
 impl<Req, Rsp> Request<Req, Rsp> {
-    pub fn new(content: Req) -> (Self, tokio::sync::oneshot::Receiver<Rsp>) {
-        let (response_sender, response_receiver) = tokio::sync::oneshot::channel();
+    pub fn new(content: Req) -> (Self, futures::channel::oneshot::Receiver<Rsp>) {
+        let (response_sender, response_receiver) = futures::channel::oneshot::channel();
         (
             Self {
                 content,
