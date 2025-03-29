@@ -237,7 +237,7 @@ fn generate_server_impl<'a>(
                     response_sender,
                 } = req;
                 #function_call
-                let _ = response_sender.send(response);
+                response_sender.send(response).expect("failed to send response");
             }
         }
     })
