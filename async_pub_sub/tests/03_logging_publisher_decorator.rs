@@ -1,8 +1,7 @@
 use std::{fmt::Debug, pin::Pin};
 
-use async_pub_sub::{Publisher, Result};
+use async_pub_sub::{Publisher, PublisherImpl, Result, SubscriberImpl};
 use futures::{future::BoxFuture, FutureExt, Stream};
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 struct LoggingPublisher<P> {
     subscriber_name: Option<&'static str>,
@@ -18,9 +17,9 @@ impl<P> LoggingPublisher<P> {
     }
 }
 
-impl<Message> Publisher for LoggingPublisher<MpscPublisher<Message>>
+impl<Message> Publisher for LoggingPublisher<PublisherImpl<Message>>
 where
-    Message: Debug + Send + 'static,
+    Message: Debug + Send + Sync + 'static,
 {
     type Message = Message;
 
@@ -58,8 +57,8 @@ where
 #[test_log::test(tokio::test)]
 async fn test_logging_publisher() -> Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = MpscSubscriber::new("subscriber");
-    let mut publisher = LoggingPublisher::new(MpscPublisher::new("publisher", 10));
+    let mut subscriber = SubscriberImpl::new("subscriber");
+    let mut publisher = LoggingPublisher::new(PublisherImpl::new("publisher", 10));
 
     subscriber.subscribe_to(&mut publisher)?;
 

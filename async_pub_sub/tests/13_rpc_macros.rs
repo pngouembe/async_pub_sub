@@ -1,3 +1,4 @@
+use async_pub_sub::{PublisherImpl, SubscriberImpl};
 use async_pub_sub::{Result, Subscriber};
 
 mod interface {
@@ -53,16 +54,14 @@ mod server {
 
 use interface::RpcInterface;
 use interface::RpcInterfaceServer;
-use tokio_implementations::publisher::mpsc::MpscPublisher;
-use tokio_implementations::subscriber::mpsc::MpscSubscriber;
 
 #[test_log::test(tokio::test)]
 async fn test_rpc_macros() -> Result<()> {
     let mut rpc_server = server::RpcServer {
-        subscriber: MpscSubscriber::new("rpc_server"),
+        subscriber: SubscriberImpl::new("rpc_server"),
     };
     let mut rpc_client = client::RpcClient {
-        publisher: MpscPublisher::new("rpc_client", 1),
+        publisher: PublisherImpl::new("rpc_client", 1),
     };
 
     rpc_server.subscribe_to(&mut rpc_client)?;

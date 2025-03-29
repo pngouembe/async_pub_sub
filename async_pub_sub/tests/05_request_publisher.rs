@@ -1,11 +1,10 @@
-use async_pub_sub::{Request, Result};
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
+use async_pub_sub::{PublisherImpl, Request, Result, SubscriberImpl};
 
 #[test_log::test(tokio::test)]
 async fn test_request_publisher() -> Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = MpscSubscriber::<Request<i32, i32>>::new("subscriber");
-    let mut publisher = MpscPublisher::new("publisher", 10);
+    let mut subscriber = SubscriberImpl::<Request<i32, i32>>::new("subscriber");
+    let mut publisher = PublisherImpl::new("publisher", 10);
 
     subscriber.subscribe_to(&mut publisher)?;
 

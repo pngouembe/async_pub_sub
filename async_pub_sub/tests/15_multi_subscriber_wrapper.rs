@@ -1,20 +1,19 @@
-use async_pub_sub::{MultiSubscriber, Result};
+use async_pub_sub::{MultiSubscriber, PublisherImpl, Result, SubscriberImpl};
 use async_pub_sub_macros::DeriveSubscriber;
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 #[derive(DeriveSubscriber)]
 struct MultiSub {
     #[subscriber(i32)]
-    subscriber_a: MpscSubscriber<i32>,
+    subscriber_a: SubscriberImpl<i32>,
     #[subscriber(String)]
-    subscriber_b: MpscSubscriber<String>,
+    subscriber_b: SubscriberImpl<String>,
 }
 
 impl MultiSub {
     fn new() -> Self {
         Self {
-            subscriber_a: MpscSubscriber::new("subscriber"),
-            subscriber_b: MpscSubscriber::new("subscriber"),
+            subscriber_a: SubscriberImpl::new("subscriber"),
+            subscriber_b: SubscriberImpl::new("subscriber"),
         }
     }
 }
@@ -23,8 +22,8 @@ impl MultiSub {
 async fn test_multi_sub() -> Result<()> {
     let mut subscriber = MultiSub::new();
 
-    let mut publisher1 = MpscPublisher::<i32>::new("publisher1", 1);
-    let mut publisher2 = MpscPublisher::<String>::new("publisher2", 1);
+    let mut publisher1 = PublisherImpl::<i32>::new("publisher1", 1);
+    let mut publisher2 = PublisherImpl::<String>::new("publisher2", 1);
 
     subscriber.subscribe_to(&mut publisher1)?;
     subscriber.subscribe_to(&mut publisher2)?;

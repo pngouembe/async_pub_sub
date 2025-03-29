@@ -2,19 +2,18 @@
 
 use std::pin::Pin;
 
-use async_pub_sub::{MultiPublisher, Publisher, Result, Subscriber};
+use async_pub_sub::{MultiPublisher, Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
 use futures::Stream;
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 struct Service {
-    subscriber: MpscSubscriber<i32>,
-    publisher: MpscPublisher<String>,
+    subscriber: SubscriberImpl<i32>,
+    publisher: PublisherImpl<String>,
 }
 
 impl Service {
     pub fn new() -> Self {
-        let subscriber = MpscSubscriber::new("Service");
-        let publisher = MpscPublisher::new("Service", 10);
+        let subscriber = SubscriberImpl::new("Service");
+        let publisher = PublisherImpl::new("Service", 10);
 
         Self {
             subscriber,
@@ -68,8 +67,8 @@ impl Publisher for Service {
 #[test_log::test(tokio::test)]
 async fn test_pub_sub_wrapper() -> Result<()> {
     // -- Setup & Fixtures
-    let mut publisher = MpscPublisher::new("publisher", 1);
-    let mut subscriber = MpscSubscriber::new("subscriber");
+    let mut publisher = PublisherImpl::new("publisher", 1);
+    let mut subscriber = SubscriberImpl::new("subscriber");
     let mut service = Service::new();
 
     service.subscribe_to(&mut publisher)?;
