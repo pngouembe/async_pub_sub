@@ -12,7 +12,7 @@ pub trait Subscriber {
     fn receive(&mut self) -> impl Future<Output = Self::Message> + Send;
 }
 
-pub trait MultiSubscriber<Message>
+pub trait SubscriberWrapper<Message>
 where
     Message: Send + 'static,
 {
@@ -33,8 +33,7 @@ where
     }
 }
 
-// TODO: Rename
-impl<T> MultiSubscriber<T::Message> for T
+impl<T> SubscriberWrapper<T::Message> for T
 where
     T: Subscriber,
 {

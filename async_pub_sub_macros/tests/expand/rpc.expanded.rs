@@ -25,13 +25,25 @@ impl ::core::fmt::Debug for RpcInterfaceMessage {
                 ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Add", &__self_0)
             }
             RpcInterfaceMessage::PrefixWithBar(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "PrefixWithBar", &__self_0)
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "PrefixWithBar",
+                    &__self_0,
+                )
             }
             RpcInterfaceMessage::GetToto(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "GetToto", &__self_0)
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "GetToto",
+                    &__self_0,
+                )
             }
             RpcInterfaceMessage::SetTata(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "SetTata", &__self_0)
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "SetTata",
+                    &__self_0,
+                )
             }
         }
     }
@@ -56,9 +68,7 @@ pub trait RpcInterfaceClient: async_pub_sub::PublisherWrapper<RpcInterfaceMessag
         self.publish(RpcInterfaceMessage::PrefixWithBar(request))
             .await
             .expect("failed to publish prefix_with_bar request");
-        response
-            .await
-            .expect("failed to receive prefix_with_bar response")
+        response.await.expect("failed to receive prefix_with_bar response")
     }
     async fn get_toto(&self) -> String {
         let (request, response) = async_pub_sub::Request::new(());
@@ -95,9 +105,9 @@ where
         <Self as RpcInterfaceClient>::set_tata(self, tata).await
     }
 }
-pub trait RpcInterfaceServer:
-    async_pub_sub::MultiSubscriber<RpcInterfaceMessage> + RpcInterface
-{
+pub trait RpcInterfaceServer: async_pub_sub::SubscriberWrapper<
+        RpcInterfaceMessage,
+    > + RpcInterface {
     async fn run(&mut self) {
         loop {
             let request = self.receive().await;
@@ -107,60 +117,36 @@ pub trait RpcInterfaceServer:
     async fn handle_request(&mut self, request: RpcInterfaceMessage) {
         match request {
             RpcInterfaceMessage::AddOne(req) => {
-                let async_pub_sub::Request {
-                    content,
-                    response_sender,
-                } = req;
+                let async_pub_sub::Request { content, response_sender } = req;
                 let response = <Self as RpcInterface>::add_one(self, content).await;
-                response_sender
-                    .send(response)
-                    .expect("failed to send response");
+                response_sender.send(response).expect("failed to send response");
             }
             RpcInterfaceMessage::Add(req) => {
-                let async_pub_sub::Request {
-                    content,
-                    response_sender,
-                } = req;
+                let async_pub_sub::Request { content, response_sender } = req;
                 let (left, right) = content;
                 let response = <Self as RpcInterface>::add(self, left, right).await;
-                response_sender
-                    .send(response)
-                    .expect("failed to send response");
+                response_sender.send(response).expect("failed to send response");
             }
             RpcInterfaceMessage::PrefixWithBar(req) => {
-                let async_pub_sub::Request {
-                    content,
-                    response_sender,
-                } = req;
-                let response = <Self as RpcInterface>::prefix_with_bar(self, content).await;
-                response_sender
-                    .send(response)
-                    .expect("failed to send response");
+                let async_pub_sub::Request { content, response_sender } = req;
+                let response = <Self as RpcInterface>::prefix_with_bar(self, content)
+                    .await;
+                response_sender.send(response).expect("failed to send response");
             }
             RpcInterfaceMessage::GetToto(req) => {
-                let async_pub_sub::Request {
-                    content,
-                    response_sender,
-                } = req;
+                let async_pub_sub::Request { content, response_sender } = req;
                 let response = <Self as RpcInterface>::get_toto(self).await;
-                response_sender
-                    .send(response)
-                    .expect("failed to send response");
+                response_sender.send(response).expect("failed to send response");
             }
             RpcInterfaceMessage::SetTata(req) => {
-                let async_pub_sub::Request {
-                    content,
-                    response_sender,
-                } = req;
+                let async_pub_sub::Request { content, response_sender } = req;
                 let response = <Self as RpcInterface>::set_tata(self, content).await;
-                response_sender
-                    .send(response)
-                    .expect("failed to send response");
+                response_sender.send(response).expect("failed to send response");
             }
         }
     }
 }
-impl<T> RpcInterfaceServer for T where
-    T: RpcInterface + async_pub_sub::MultiSubscriber<RpcInterfaceMessage>
-{
-}
+impl<T> RpcInterfaceServer for T
+where
+    T: RpcInterface + async_pub_sub::SubscriberWrapper<RpcInterfaceMessage>,
+{}

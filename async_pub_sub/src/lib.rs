@@ -10,10 +10,10 @@ mod error;
 pub use error::{Error, Result};
 
 pub use publisher::{
-    DebugingPublisherLayer, LoggingPublisherLayer, PublisherWrapper, Publisher, PublisherBuilder,
-    PublisherImpl, PublisherLayer, Request,
+    DebugingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
+    PublisherLayer, PublisherWrapper, Request,
 };
-pub use subscriber::{MultiSubscriber, Subscriber, SubscriberImpl};
+pub use subscriber::{Subscriber, SubscriberImpl, SubscriberWrapper};
 pub use utils::LoggingForwarder;
 
 #[cfg(feature = "macros")]

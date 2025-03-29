@@ -51,7 +51,7 @@ pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
             let field_name = &field.ident;
 
             quote! {
-                impl #impl_generics async_pub_sub::MultiSubscriber<#message_type> 
+                impl #impl_generics async_pub_sub::SubscriberWrapper<#message_type> 
                     for #struct_name #ty_generics #where_clause 
                 {
                     fn get_subscriber(&self) -> &impl async_pub_sub::Subscriber<Message = #message_type> {

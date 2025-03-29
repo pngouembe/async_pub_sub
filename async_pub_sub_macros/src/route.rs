@@ -36,12 +36,12 @@ pub(crate) fn generate_route(input: RouteInput) -> TokenStream {
 
     let output = if let Some(message_type) = input.message_type {
         quote! {
-            async_pub_sub::MultiSubscriber::<#message_type>::subscribe_to(&mut #subscriber, &mut #publisher)
+            async_pub_sub::SubscriberWrapper::<#message_type>::subscribe_to(&mut #subscriber, &mut #publisher)
         }
     } else {
         quote! {
             {
-                use async_pub_sub::MultiSubscriber;
+                use async_pub_sub::SubscriberWrapper;
                 #subscriber.subscribe_to(&mut #publisher)
             }
         }

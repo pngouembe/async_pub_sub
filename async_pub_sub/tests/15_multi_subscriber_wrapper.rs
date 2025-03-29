@@ -1,4 +1,4 @@
-use async_pub_sub::{MultiSubscriber, PublisherImpl, Result, SubscriberImpl};
+use async_pub_sub::{PublisherImpl, Result, SubscriberImpl, SubscriberWrapper};
 use async_pub_sub_macros::DeriveSubscriber;
 
 #[derive(DeriveSubscriber)]

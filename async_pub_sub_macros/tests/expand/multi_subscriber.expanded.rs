@@ -11,7 +11,7 @@ where
 impl<
     SubA,
     SubB,
-> async_pub_sub::MultiSubscriber<<SubA as async_pub_sub::Subscriber>::Message>
+> async_pub_sub::SubscriberWrapper<<SubA as async_pub_sub::Subscriber>::Message>
 for TestSubscriber<SubA, SubB>
 where
     SubA: Subscriber,
@@ -35,7 +35,7 @@ where
 impl<
     SubA,
     SubB,
-> async_pub_sub::MultiSubscriber<<SubB as async_pub_sub::Subscriber>::Message>
+> async_pub_sub::SubscriberWrapper<<SubB as async_pub_sub::Subscriber>::Message>
 for TestSubscriber<SubA, SubB>
 where
     SubA: Subscriber,

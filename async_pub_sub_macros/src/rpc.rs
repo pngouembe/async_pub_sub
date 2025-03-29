@@ -48,7 +48,7 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
 
         #trait_impl_for_client
 
-        pub trait #server_trait_name: async_pub_sub::MultiSubscriber<#message_enum_name> + #trait_name {
+        pub trait #server_trait_name: async_pub_sub::SubscriberWrapper<#message_enum_name> + #trait_name {
             async fn run(&mut self) {
                 loop {
                     let request = self.receive().await;
@@ -250,7 +250,7 @@ fn generate_server_trait_impl(
 ) -> proc_macro2::TokenStream {
     quote! {
         impl<T> #server_trait_name for T where
-            T: #trait_name + async_pub_sub::MultiSubscriber<#message_enum_name>
+            T: #trait_name + async_pub_sub::SubscriberWrapper<#message_enum_name>
         {
         }
     }
