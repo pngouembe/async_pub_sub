@@ -12,3 +12,8 @@ pub use publisher::{
 };
 pub use subscriber::{MultiSubscriber, Subscriber, SubscriberImpl};
 pub use utils::LoggingForwarder;
+
+#[cfg(feature = "macros")]
+pub use async_pub_sub_macros as macros;
+
+pub use futures;

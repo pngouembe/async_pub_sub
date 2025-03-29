@@ -11,7 +11,7 @@ impl<P: Publisher> async_pub_sub::Publisher for TestPublisherA<P> {
     fn publish(
         &self,
         message: Self::Message,
-    ) -> futures::future::BoxFuture<async_pub_sub::Result<()>> {
+    ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async_pub_sub::Publisher::publish(&self.publisher_a, message)
     }
     fn get_message_stream(
@@ -19,7 +19,11 @@ impl<P: Publisher> async_pub_sub::Publisher for TestPublisherA<P> {
         subscriber_name: &'static str,
     ) -> async_pub_sub::Result<
         std::pin::Pin<
-            Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>,
+            Box<
+                dyn async_pub_sub::futures::Stream<
+                    Item = Self::Message,
+                > + Send + Sync + 'static,
+            >,
         >,
     > {
         async_pub_sub::Publisher::get_message_stream(
@@ -45,7 +49,7 @@ where
     fn publish(
         &self,
         message: Self::Message,
-    ) -> futures::future::BoxFuture<async_pub_sub::Result<()>> {
+    ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async_pub_sub::Publisher::publish(&self.publisher_b, message)
     }
     fn get_message_stream(
@@ -53,7 +57,11 @@ where
         subscriber_name: &'static str,
     ) -> async_pub_sub::Result<
         std::pin::Pin<
-            Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>,
+            Box<
+                dyn async_pub_sub::futures::Stream<
+                    Item = Self::Message,
+                > + Send + Sync + 'static,
+            >,
         >,
     > {
         async_pub_sub::Publisher::get_message_stream(

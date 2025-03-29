@@ -37,14 +37,14 @@ pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
                     async_pub_sub::Publisher::get_name(&self.#field_name)
                 }
 
-                fn publish(&self, message: Self::Message) -> futures::future::BoxFuture<async_pub_sub::Result<()>> {
+                fn publish(&self, message: Self::Message) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
                     async_pub_sub::Publisher::publish(&self.#field_name, message)
                 }
 
                 fn get_message_stream(
                     &mut self,
                     subscriber_name: &'static str,
-                ) -> async_pub_sub::Result<std::pin::Pin<Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+                ) -> async_pub_sub::Result<std::pin::Pin<Box<dyn async_pub_sub::futures::Stream<Item = Self::Message> + Send + Sync + 'static>>> {
                     async_pub_sub::Publisher::get_message_stream(&mut self.#field_name, subscriber_name)
                 }
             }
