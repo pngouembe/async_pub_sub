@@ -39,7 +39,7 @@ where
 
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl async_pub_sub::MultiPublisher<Self::Message>,
+        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
     ) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 

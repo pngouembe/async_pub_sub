@@ -50,12 +50,12 @@ pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
             }
         }
     } else {
-        // Multiple publishers case - implement MultiPublisher trait for each message type
+        // Multiple publishers case - implement PublisherWrapper trait for each message type
         let impls = publisher_fields.iter().map(|(field, message_type)| {
             let field_name = &field.ident;
 
             quote! {
-                impl #impl_generics async_pub_sub::MultiPublisher<#message_type> 
+                impl #impl_generics async_pub_sub::PublisherWrapper<#message_type> 
                     for #struct_name #ty_generics #where_clause 
                 {
                     fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = #message_type> {

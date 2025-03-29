@@ -2,7 +2,7 @@
 
 use std::pin::Pin;
 
-use async_pub_sub::{MultiPublisher, Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{PublisherWrapper, Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
 use futures::Stream;
 
 struct Service {
@@ -36,7 +36,7 @@ impl Subscriber for Service {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 

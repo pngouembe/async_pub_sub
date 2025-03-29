@@ -11,7 +11,7 @@ where
 impl<
     PubA,
     PubB,
-> async_pub_sub::MultiPublisher<<PubA as async_pub_sub::Publisher>::Message>
+> async_pub_sub::PublisherWrapper<<PubA as async_pub_sub::Publisher>::Message>
 for TestPublisher<PubA, PubB>
 where
     PubA: Publisher,
@@ -35,7 +35,7 @@ where
 impl<
     PubA,
     PubB,
-> async_pub_sub::MultiPublisher<<PubB as async_pub_sub::Publisher>::Message>
+> async_pub_sub::PublisherWrapper<<PubB as async_pub_sub::Publisher>::Message>
 for TestPublisher<PubA, PubB>
 where
     PubA: Publisher,

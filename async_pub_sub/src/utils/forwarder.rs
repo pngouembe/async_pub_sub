@@ -1,6 +1,6 @@
 use std::{fmt::Display, pin::Pin};
 
-use crate::{MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
+use crate::{Publisher, PublisherWrapper, Result, Subscriber, SubscriberImpl};
 use futures::{stream, FutureExt, Stream};
 
 // TODO: create logging forwarder using a middleware pattern
@@ -37,7 +37,7 @@ where
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
         let Some(subscriber) = self.subscriber.as_mut() else {
             let subscriber_name = self
                 .subscriber_name

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use async_pub_sub::{MultiPublisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{PublisherWrapper, PublisherImpl, Result, Subscriber, SubscriberImpl};
 
 struct LoggingSubscriber<S> {
     publisher_name: Option<&'static str>,
@@ -25,7 +25,7 @@ where
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
         self.subscriber.subscribe_to(publisher)?;
         self.publisher_name = Some(publisher.get_name());
         log::info!(

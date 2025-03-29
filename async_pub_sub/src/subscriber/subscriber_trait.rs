@@ -1,13 +1,13 @@
 use std::future::Future;
 
-use crate::{MultiPublisher, Result};
+use crate::{PublisherWrapper, Result};
 
 pub trait Subscriber {
     type Message: Send + 'static;
 
     fn get_name(&self) -> &'static str;
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()>;
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()>;
 
     fn receive(&mut self) -> impl Future<Output = Self::Message> + Send;
 }
@@ -24,7 +24,7 @@ where
         Subscriber::get_name(self.get_subscriber())
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Message>) -> Result<()> {
         Subscriber::subscribe_to(self.get_subscriber_mut(), publisher)
     }
 

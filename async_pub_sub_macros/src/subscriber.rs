@@ -36,7 +36,7 @@ pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
                     async_pub_sub::Subscriber::get_name(&self.#field_name)
                 }
 
-                fn subscribe_to(&mut self, publisher: &mut impl async_pub_sub::MultiPublisher<Self::Message>) -> async_pub_sub::Result<()> {
+                fn subscribe_to(&mut self, publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>) -> async_pub_sub::Result<()> {
                     async_pub_sub::Subscriber::subscribe_to(&mut self.#field_name, publisher)
                 }
 
@@ -46,7 +46,7 @@ pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
             }
         }
     } else {
-        // Multiple publishers case - implement MultiPublisher trait for each message type
+        // Multiple publishers case - implement PublisherWrapper trait for each message type
         let impls = subscriber_fields.iter().map(|(field, message_type)| {
             let field_name = &field.ident;
 

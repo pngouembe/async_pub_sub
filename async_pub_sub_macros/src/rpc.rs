@@ -42,7 +42,7 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
             #(#enum_variants)*
         }
 
-        pub trait #client_trait_name: async_pub_sub::MultiPublisher<#message_enum_name> {
+        pub trait #client_trait_name: async_pub_sub::PublisherWrapper<#message_enum_name> {
             #(#client_methods)*
         }
 

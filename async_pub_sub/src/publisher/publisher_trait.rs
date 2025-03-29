@@ -48,7 +48,7 @@ where
     fn layer(&self, publisher: InnerPublisherType) -> Self::PublisherType;
 }
 
-pub trait MultiPublisher<Message>
+pub trait PublisherWrapper<Message>
 where
     Message: Send + 'static,
 {
@@ -73,8 +73,7 @@ where
     }
 }
 
-// TODO: Rename
-impl<T> MultiPublisher<T::Message> for T
+impl<T> PublisherWrapper<T::Message> for T
 where
     T: Publisher,
 {

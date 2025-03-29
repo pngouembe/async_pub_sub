@@ -96,7 +96,7 @@ impl Subscriber for Service {
 
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl async_pub_sub::MultiPublisher<Self::Message>,
+        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
     ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }

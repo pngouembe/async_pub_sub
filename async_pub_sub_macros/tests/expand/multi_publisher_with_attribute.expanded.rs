@@ -6,7 +6,7 @@ struct TestPublisher {
     #[publisher(String)]
     publisher_b: SimplePublisher<String>,
 }
-impl async_pub_sub::MultiPublisher<i32> for TestPublisher {
+impl async_pub_sub::PublisherWrapper<i32> for TestPublisher {
     fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = i32> {
         &self.publisher_a
     }
@@ -16,7 +16,7 @@ impl async_pub_sub::MultiPublisher<i32> for TestPublisher {
         &mut self.publisher_a
     }
 }
-impl async_pub_sub::MultiPublisher<String> for TestPublisher {
+impl async_pub_sub::PublisherWrapper<String> for TestPublisher {
     fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = String> {
         &self.publisher_b
     }

@@ -2,7 +2,7 @@ use std::{future::Future, pin::Pin};
 
 use futures::{stream::SelectAll, Stream, StreamExt};
 
-use crate::{MultiPublisher, Result, Subscriber};
+use crate::{PublisherWrapper, Result, Subscriber};
 
 pub struct SubscriberImpl<Message>
 where
@@ -21,7 +21,7 @@ where
         Self { name, messages }
     }
 
-    pub fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Message>) -> Result<()> {
+    pub fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Message>) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
         self.messages.push(stream);
         Ok(())
@@ -42,7 +42,7 @@ where
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
         SubscriberImpl::subscribe_to(self, publisher)
     }
 
