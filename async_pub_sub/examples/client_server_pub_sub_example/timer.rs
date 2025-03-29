@@ -1,9 +1,8 @@
 use std::time::Duration;
 
-use async_pub_sub::{DebugingPublisherLayer, Publisher, PublisherBuilder};
+use async_pub_sub::{DebugingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl};
 use async_pub_sub_macros::DerivePublisher;
 use rand::Rng;
-use tokio_implementations::publisher::mpsc::MpscPublisher;
 
 const NAME: &str = "Timer";
 
@@ -30,17 +29,17 @@ impl TimerService {
     pub fn new() -> Self {
         Self {
             data_consumer_publisher: Box::new(
-                PublisherBuilder::new(MpscPublisher::new(NAME, 10))
+                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
                     .with_layer(DebugingPublisherLayer)
                     .build(),
             ),
             data_producer_publisher: Box::new(
-                PublisherBuilder::new(MpscPublisher::new(NAME, 10))
+                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
                     .with_layer(DebugingPublisherLayer)
                     .build(),
             ),
             cache_publisher: Box::new(
-                PublisherBuilder::new(MpscPublisher::new(NAME, 10))
+                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
                     .with_layer(DebugingPublisherLayer)
                     .build(),
             ),

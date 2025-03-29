@@ -109,7 +109,6 @@ dependencies = [
  "rand",
  "test-log",
  "tokio",
- "tokio_implementations",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
+use async_pub_sub::{PublisherImpl, SubscriberImpl};
 use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 const NAME: &str = "Persistency";
 
@@ -14,14 +14,14 @@ pub trait PersistencyInterface {
 pub struct PersistencyService {
     data: Vec<u8>,
     #[subscriber(PersistencyInterfaceMessage)]
-    rpc_subscriber: MpscSubscriber<PersistencyInterfaceMessage>,
+    rpc_subscriber: SubscriberImpl<PersistencyInterfaceMessage>,
 }
 
 impl PersistencyService {
     pub fn new() -> Self {
         Self {
             data: Vec::new(),
-            rpc_subscriber: MpscSubscriber::new(NAME),
+            rpc_subscriber: SubscriberImpl::new(NAME),
         }
     }
 
@@ -46,13 +46,13 @@ impl PersistencyInterface for PersistencyService {
 #[derive(DerivePublisher)]
 pub struct PersistencyClient {
     #[publisher(PersistencyInterfaceMessage)]
-    rpc_publisher: MpscPublisher<PersistencyInterfaceMessage>,
+    rpc_publisher: PublisherImpl<PersistencyInterfaceMessage>,
 }
 
 impl PersistencyClient {
     pub fn new(name: &'static str, buffer_size: usize) -> Self {
         Self {
-            rpc_publisher: MpscPublisher::new(name, buffer_size),
+            rpc_publisher: PublisherImpl::new(name, buffer_size),
         }
     }
 }

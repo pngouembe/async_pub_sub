@@ -1,6 +1,7 @@
-use async_pub_sub::{DebugingPublisherLayer, Publisher, PublisherBuilder};
+use async_pub_sub::{
+    DebugingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl, SubscriberImpl,
+};
 use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
-use tokio_implementations::{publisher::mpsc::MpscPublisher, subscriber::mpsc::MpscSubscriber};
 
 use crate::{
     persistency::{PersistencyClient, PersistencyInterface, PersistencyInterfaceMessage},
@@ -19,20 +20,20 @@ pub trait CacheInterface {
 pub struct CacheService {
     data: Option<String>,
     #[subscriber(CacheInterfaceMessage)]
-    rpc_subscriber: MpscSubscriber<CacheInterfaceMessage>,
+    rpc_subscriber: SubscriberImpl<CacheInterfaceMessage>,
     #[publisher(PersistencyInterfaceMessage)]
     persistency_rpc_client: PersistencyClient,
     #[subscriber(CacheTimerNotification)]
-    timer_notification_subscriber: MpscSubscriber<CacheTimerNotification>,
+    timer_notification_subscriber: SubscriberImpl<CacheTimerNotification>,
 }
 
 impl CacheService {
     pub fn new() -> Self {
         Self {
             data: None,
-            rpc_subscriber: MpscSubscriber::new(NAME),
+            rpc_subscriber: SubscriberImpl::new(NAME),
             persistency_rpc_client: PersistencyClient::new(NAME, 10),
-            timer_notification_subscriber: MpscSubscriber::new(NAME),
+            timer_notification_subscriber: SubscriberImpl::new(NAME),
         }
     }
 
@@ -72,7 +73,7 @@ impl CacheClient {
     pub fn new(name: &'static str, buffer_size: usize) -> Self {
         Self {
             rpc_publisher: Box::new(
-                PublisherBuilder::new(MpscPublisher::new(name, buffer_size))
+                PublisherBuilder::new(PublisherImpl::new(name, buffer_size))
                     .with_layer(DebugingPublisherLayer)
                     .build(),
             ),
