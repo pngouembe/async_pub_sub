@@ -1,6 +1,6 @@
 use std::{fmt::Display, pin::Pin};
 
-use crate::{subscriber, MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
+use crate::{MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
 use futures::{stream, FutureExt, Stream};
 
 // TODO: create logging forwarder using a middleware pattern
