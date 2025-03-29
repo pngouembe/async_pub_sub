@@ -1,18 +1,17 @@
 use std::{fmt::Display, pin::Pin};
 
-use crate::{MultiPublisher, Publisher, Result, Subscriber};
-use futures::{
-    stream::{self, SelectAll},
-    FutureExt, Stream, StreamExt,
-};
+use crate::{MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
+use futures::{stream, FutureExt, Stream};
 
-// todo: create logging forwarder using a middleware pattern
+// TODO: create logging forwarder using a middleware pattern
+// TODO: Add the possibility to publisher from the forwarder using a middleware pattern
 pub struct LoggingForwarder<Message>
 where
     Message: Display + Send + 'static,
 {
     name: &'static str,
-    messages: Option<SelectAll<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>>>,
+    subscriber_name: Option<&'static str>,
+    subscriber: Option<SubscriberImpl<Message>>,
 }
 
 impl<Message> LoggingForwarder<Message>
@@ -22,7 +21,8 @@ where
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
-            messages: Some(SelectAll::new()),
+            subscriber_name: None,
+            subscriber: Some(SubscriberImpl::new(name)),
         }
     }
 }
@@ -38,10 +38,7 @@ where
     }
 
     fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
-        let stream = publisher.get_message_stream(self.name)?;
-
-        // todo: Fix the unwrap
-        self.messages.as_mut().unwrap().push(stream);
+        self.subscriber.as_mut().unwrap().subscribe_to(publisher)?;
 
         Ok(())
     }
@@ -69,15 +66,26 @@ where
         &mut self,
         subscriber_name: &'static str,
     ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
-        // todo: Fix the unwrap
-        let messages = self.messages.take().unwrap();
-        let name = self.name;
+        let Some(subscriber) = self.subscriber.take() else {
+            return Err(format!(
+                "{} forwarder can only be bound to one subscriber (already bound to {})",
+                self.name,
+                self.subscriber_name
+                    .expect("the subscriber name should be known at this point")
+            )
+            .into());
+        };
+        self.subscriber_name = Some(subscriber_name);
 
-        let stream = Box::pin(stream::unfold(messages, move |mut messages| async move {
-            let message = messages.select_next_some().await;
-            log::info!("[{}] -> [{}]: {}", name, subscriber_name, message);
-            Some((message, messages))
-        }));
+        let name = self.name;
+        let stream = Box::pin(stream::unfold(
+            subscriber,
+            move |mut subscriber| async move {
+                let message = subscriber.receive().await;
+                log::info!("[{}] -> [{}]: {}", name, subscriber_name, message);
+                Some((message, subscriber))
+            },
+        ));
 
         log::info!(
             "({}) <-> ({}): {}",

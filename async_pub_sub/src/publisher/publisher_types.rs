@@ -18,7 +18,7 @@ impl<Req, Rsp> Request<Req, Rsp> {
     }
 
     pub fn respond(self, response: Rsp) {
-        //todo: handle error
+        //TODO: handle error
         let _ = self.response_sender.send(response);
     }
 }
@@ -28,7 +28,7 @@ where
     Req: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // todo: rework the request display
+        // TODO: rework the request display
         write!(
             f,
             "Request({}: {})",

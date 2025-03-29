@@ -6,7 +6,7 @@ use futures::{
     FutureExt, Stream, StreamExt,
 };
 
-// todo: fix the request response logging in the forwarder
+// TODO: fix the request response logging in the forwarder
 struct LoggingForwarder<Message>
 where
     Message: Display + Send + 'static,
@@ -43,7 +43,7 @@ where
     ) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
-        // todo: Fix the unwrap
+        // TODO: Fix the unwrap
         self.messages.as_mut().unwrap().push(stream);
 
         Ok(())
@@ -72,7 +72,7 @@ where
         &mut self,
         subscriber_name: &'static str,
     ) -> Result<Pin<Box<dyn Stream<Item = Message> + Send + Sync + 'static>>> {
-        // todo: Fix the unwrap
+        // TODO: Fix the unwrap
         let messages = self.messages.take().unwrap();
         let name = self.name;
 
