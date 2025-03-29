@@ -24,7 +24,7 @@ Add `async_pub_sub` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-async_pub_sub = { verion = "0.1.0", features = ["macros"] } # Replace with the latest version
+async_pub_sub = { version = "0.1.0", features = ["macros"] } # Replace with the latest version
 ```
 
 See the [examples/](examples/) directory for usage examples.

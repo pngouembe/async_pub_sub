@@ -1,3 +1,6 @@
+//! Asynchronous publish-subscribe library for Rust.
+#![doc = include_str!("../README.md")]
+
 mod publisher;
 mod subscriber;
 mod utils;
