@@ -32,7 +32,6 @@ where
     }
 }
 
-// TODO: rework the request display
 impl<Req, Rsp> Display for Request<Req, Rsp>
 where
     Req: Display + Debug,

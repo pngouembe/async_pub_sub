@@ -4,8 +4,6 @@ use futures::{stream::SelectAll, Stream, StreamExt};
 
 use crate::{MultiPublisher, Result, Subscriber};
 
-// TODO: Bring this back to the async_pub_sub crate as it is a generic implementation
-
 pub struct SubscriberImpl<Message>
 where
     Message: Send + 'static,
