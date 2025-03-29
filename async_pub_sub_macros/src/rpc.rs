@@ -89,7 +89,9 @@ fn generate_enum_variants<'a>(
         let input_types = if input_types.is_empty() {
             quote! { () }
         } else if input_types.len() == 1 {
-            let ty = input_types.first().unwrap();
+            let ty = input_types
+                .first()
+                .expect("input_types should not be empty");
             quote! { #ty }
         } else {
             quote! { (#(#input_types),*) }
@@ -129,19 +131,24 @@ fn generate_client_methods<'a>(
         let request_content = if request_content.is_empty() {
             quote! { () }
         } else if request_content.len() == 1 {
-            let arg_name = request_content.first().unwrap();
+            let arg_name = request_content
+                .first()
+                .expect("request_content should not be empty");
             quote! { #arg_name }
         } else {
             quote! { (#(#request_content),*) }
         };
+
+        let publish_failure_message = format!("failed to publish {} request", name);
+        let response_failure_message = format!("failed to receive {} response", name);
 
         quote! {
             async fn #function_signature {
                 let (request, response) = async_pub_sub::Request::new(#request_content);
                 self.publish(#message_enum_name::#variant_name(request))
                     .await
-                    .unwrap();
-                response.await.unwrap()
+                    .expect(#publish_failure_message);
+                response.await.expect(#response_failure_message)
             }
         }
     })

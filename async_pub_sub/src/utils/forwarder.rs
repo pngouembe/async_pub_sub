@@ -1,6 +1,6 @@
 use std::{fmt::Display, pin::Pin};
 
-use crate::{MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
+use crate::{subscriber, MultiPublisher, Publisher, Result, Subscriber, SubscriberImpl};
 use futures::{stream, FutureExt, Stream};
 
 // TODO: create logging forwarder using a middleware pattern
@@ -38,9 +38,22 @@ where
     }
 
     fn subscribe_to(&mut self, publisher: &mut impl MultiPublisher<Self::Message>) -> Result<()> {
-        self.subscriber.as_mut().unwrap().subscribe_to(publisher)?;
+        let Some(subscriber) = self.subscriber.as_mut() else {
+            let subscriber_name = self
+                .subscriber_name
+                .expect("the subscriber name should be known at this point");
 
-        Ok(())
+            return Err(format!(
+                "{} forwarder has already been bound to {}, subscribe to {} before {} subscribes to it",
+                self.name,
+                subscriber_name,
+                self.name,
+                subscriber_name
+            )
+            .into());
+        };
+
+        subscriber.subscribe_to(publisher)
     }
 
     async fn receive(&mut self) -> Message {

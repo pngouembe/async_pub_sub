@@ -26,7 +26,7 @@ pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
 
     let expanded = if publisher_fields.len() == 1 {
         // Single publisher case - implement Publisher trait
-        let (field, message_type) = publisher_fields.first().unwrap();
+        let (field, message_type) = publisher_fields.first().expect("Publisher_fields is not empty, this should never happen");
         let field_name = &field.ident;
 
         quote! {

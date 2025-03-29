@@ -51,28 +51,38 @@ impl ::core::fmt::Debug for RpcInterfaceMessage {
 pub trait RpcInterfaceClient: async_pub_sub::MultiPublisher<RpcInterfaceMessage> {
     async fn add_one(&self, value: i32) -> i32 {
         let (request, response) = async_pub_sub::Request::new(value);
-        self.publish(RpcInterfaceMessage::AddOne(request)).await.unwrap();
-        response.await.unwrap()
+        self.publish(RpcInterfaceMessage::AddOne(request))
+            .await
+            .expect("failed to publish add_one request");
+        response.await.expect("failed to receive add_one response")
     }
     async fn add(&self, left: i32, right: i32) -> i32 {
         let (request, response) = async_pub_sub::Request::new((left, right));
-        self.publish(RpcInterfaceMessage::Add(request)).await.unwrap();
-        response.await.unwrap()
+        self.publish(RpcInterfaceMessage::Add(request))
+            .await
+            .expect("failed to publish add request");
+        response.await.expect("failed to receive add response")
     }
     async fn prefix_with_bar(&self, string: String) -> String {
         let (request, response) = async_pub_sub::Request::new(string);
-        self.publish(RpcInterfaceMessage::PrefixWithBar(request)).await.unwrap();
-        response.await.unwrap()
+        self.publish(RpcInterfaceMessage::PrefixWithBar(request))
+            .await
+            .expect("failed to publish prefix_with_bar request");
+        response.await.expect("failed to receive prefix_with_bar response")
     }
     async fn get_toto(&self) -> String {
         let (request, response) = async_pub_sub::Request::new(());
-        self.publish(RpcInterfaceMessage::GetToto(request)).await.unwrap();
-        response.await.unwrap()
+        self.publish(RpcInterfaceMessage::GetToto(request))
+            .await
+            .expect("failed to publish get_toto request");
+        response.await.expect("failed to receive get_toto response")
     }
     async fn set_tata(&mut self, tata: String) {
         let (request, response) = async_pub_sub::Request::new(tata);
-        self.publish(RpcInterfaceMessage::SetTata(request)).await.unwrap();
-        response.await.unwrap()
+        self.publish(RpcInterfaceMessage::SetTata(request))
+            .await
+            .expect("failed to publish set_tata request");
+        response.await.expect("failed to receive set_tata response")
     }
 }
 impl<T> RpcInterface for T
