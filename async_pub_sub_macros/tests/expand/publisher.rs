@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use async_pub_sub::Publisher;
 use async_pub_sub_macros::DerivePublisher;
 
@@ -13,3 +14,5 @@ where
 {
     publisher_b: P,
 }
+
+fn main() {}

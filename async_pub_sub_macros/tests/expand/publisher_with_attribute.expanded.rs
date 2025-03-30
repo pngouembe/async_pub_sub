@@ -1,8 +1,9 @@
-use async_pub_sub::SimplePublisher;
+#![allow(unused_imports)]
+use async_pub_sub::PublisherImpl;
 use async_pub_sub_macros::DerivePublisher;
 struct TestPublisherA {
     #[publisher(i32)]
-    publisher_a: SimplePublisher<i32>,
+    publisher_a: PublisherImpl<i32>,
 }
 impl async_pub_sub::Publisher for TestPublisherA {
     type Message = i32;
@@ -35,7 +36,7 @@ impl async_pub_sub::Publisher for TestPublisherA {
 }
 struct TestPublisherB {
     #[publisher(String)]
-    publisher_b: SimplePublisher<String>,
+    publisher_b: PublisherImpl<String>,
 }
 impl async_pub_sub::Publisher for TestPublisherB {
     type Message = String;
@@ -66,3 +67,4 @@ impl async_pub_sub::Publisher for TestPublisherB {
         )
     }
 }
+fn main() {}

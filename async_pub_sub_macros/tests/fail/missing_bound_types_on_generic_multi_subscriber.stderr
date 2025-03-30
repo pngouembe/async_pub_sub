@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `SubscriberWrapper<_>` for type `TestSubscriber<_, _>`
+ --> tests/fail/missing_bound_types_on_generic_multi_subscriber.rs:6:10
+  |
+6 | #[derive(DeriveSubscriber)]
+  |          ^^^^^^^^^^^^^^^^
+  |          |
+  |          first implementation here
+  |          conflicting implementation for `TestSubscriber<_, _>`
+  |
+  = note: this error originates in the derive macro `DeriveSubscriber` (in Nightly builds, run with -Z macro-backtrace for more info)

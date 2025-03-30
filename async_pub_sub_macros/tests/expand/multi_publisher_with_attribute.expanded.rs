@@ -1,10 +1,10 @@
-use async_pub_sub::SimplePublisher;
+use async_pub_sub::PublisherImpl;
 use async_pub_sub_macros::DerivePublisher;
 struct TestPublisher {
     #[publisher(i32)]
-    publisher_a: SimplePublisher<i32>,
+    publisher_a: PublisherImpl<i32>,
     #[publisher(String)]
-    publisher_b: SimplePublisher<String>,
+    publisher_b: PublisherImpl<String>,
 }
 impl async_pub_sub::PublisherWrapper<i32> for TestPublisher {
     fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = i32> {
@@ -26,3 +26,4 @@ impl async_pub_sub::PublisherWrapper<String> for TestPublisher {
         &mut self.publisher_b
     }
 }
+fn main() {}

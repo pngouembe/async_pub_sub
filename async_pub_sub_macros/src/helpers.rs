@@ -1,6 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, GenericParam, Type, TypeParamBound, TypePath};
+use syn::{
+    AngleBracketedGenericArguments, DeriveInput, GenericParam, Type, TypeParamBound, TypePath,
+};
 
 pub(crate) fn find_all_subscriber_fields<'a>(
     fields: &'a syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
@@ -10,7 +12,7 @@ pub(crate) fn find_all_subscriber_fields<'a>(
         .iter()
         .filter_map(|field| {
             if has_subscriber_bound(field, input) {
-                Some((field, get_generic_subscriber_message_type(field)))
+                Some((field, get_generic_subscriber_message_type(field, input)))
             } else if has_subscriber_attribute(field) {
                 Some((field, get_concrete_subscriber_message_type(field)))
             } else {
@@ -83,17 +85,123 @@ fn has_subscriber_attribute(field: &syn::Field) -> bool {
         .any(|attr| attr.path().is_ident("subscriber"))
 }
 
-fn get_generic_subscriber_message_type(field: &syn::Field) -> TokenStream {
+fn get_generic_subscriber_message_type(field: &syn::Field, input: &DeriveInput) -> TokenStream {
     let type_param = if let Type::Path(TypePath { path, .. }) = &field.ty {
-        path.segments
-            .first()
-            .map(|s| &s.ident)
-            .expect("Invalid field type")
+        path
     } else {
         panic!("Invalid field type")
     };
 
-    quote! { <#type_param as async_pub_sub::Subscriber>::Message }
+    if let Some(message_type) = find_subscriber_message_type(type_param) {
+        quote! { #message_type }
+    } else if let Some(message_type) = find_subscriber_message_type_in_bounds(type_param, input) {
+        quote! { #message_type }
+    } else {
+        // TODO: generate proper error message
+        // Fallback to the old behavior if we can't find the concrete type
+        quote! { <#type_param as async_pub_sub::Subscriber>::Message }
+    }
+}
+
+fn find_subscriber_message_type(type_param: &syn::Path) -> Option<TokenStream> {
+    let message_type = type_param
+        .segments
+        .iter()
+        .find(|segment| {
+            segment.ident == "Subscriber"
+                && matches!(segment.arguments, syn::PathArguments::AngleBracketed(_))
+        })
+        .map(|segment| {
+            if let syn::PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                args, ..
+            }) = &segment.arguments
+            {
+                if let Some(syn::GenericArgument::AssocType(assoc_type)) = args.first() {
+                    if assoc_type.ident == "Message" {
+                        let message_type = assoc_type.ty.clone();
+                        return Some(quote! { #message_type });
+                    }
+                }
+            }
+            None
+        });
+
+    message_type.flatten()
+}
+
+fn find_subscriber_message_type_in_bounds(
+    type_param: &syn::Path,
+    input: &DeriveInput,
+) -> Option<TokenStream> {
+    let subscriber_type = type_param.segments.first().map(|s| &s.ident);
+
+    // First check generic parameters
+    for param in &input.generics.params {
+        if let GenericParam::Type(type_param) = param {
+            if Some(&type_param.ident) == subscriber_type {
+                for bound in &type_param.bounds {
+                    if let TypeParamBound::Trait(t) = bound {
+                        if t.path
+                            .segments
+                            .last()
+                            .map(|s| s.ident == "Subscriber")
+                            .unwrap_or(false)
+                        {
+                            if let syn::PathArguments::AngleBracketed(args) =
+                                &t.path.segments.last().unwrap().arguments
+                            {
+                                if let Some(syn::GenericArgument::AssocType(assoc_type)) =
+                                    args.args.first()
+                                {
+                                    if assoc_type.ident == "Message" {
+                                        let message_type = assoc_type.ty.clone();
+                                        return Some(quote! { #message_type });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Then check where clause
+    if let Some(where_clause) = &input.generics.where_clause {
+        for predicate in &where_clause.predicates {
+            if let syn::WherePredicate::Type(pred_type) = predicate {
+                if let Type::Path(TypePath { path, .. }) = &pred_type.bounded_ty {
+                    if path.segments.first().map(|s| &s.ident) == subscriber_type {
+                        for bound in &pred_type.bounds {
+                            if let TypeParamBound::Trait(t) = bound {
+                                if t.path
+                                    .segments
+                                    .last()
+                                    .map(|s| s.ident == "Subscriber")
+                                    .unwrap_or(false)
+                                {
+                                    if let syn::PathArguments::AngleBracketed(args) =
+                                        &t.path.segments.last().unwrap().arguments
+                                    {
+                                        if let Some(syn::GenericArgument::AssocType(assoc_type)) =
+                                            args.args.first()
+                                        {
+                                            if assoc_type.ident == "Message" {
+                                                let message_type = assoc_type.ty.clone();
+                                                return Some(quote! { #message_type });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
 
 fn get_concrete_subscriber_message_type(field: &syn::Field) -> TokenStream {
@@ -117,7 +225,7 @@ pub(crate) fn find_all_publisher_fields<'a>(
         .iter()
         .filter_map(|field| {
             if has_publisher_bound(field, input) {
-                Some((field, get_generic_publisher_message_type(field)))
+                Some((field, get_generic_publisher_message_type(field, input)))
             } else if has_publisher_attribute(field) {
                 Some((field, get_concrete_publisher_message_type(field)))
             } else {
@@ -127,17 +235,121 @@ pub(crate) fn find_all_publisher_fields<'a>(
         .collect()
 }
 
-fn get_generic_publisher_message_type(field: &syn::Field) -> TokenStream {
+fn get_generic_publisher_message_type(field: &syn::Field, input: &DeriveInput) -> TokenStream {
     let type_param = if let Type::Path(TypePath { path, .. }) = &field.ty {
-        path.segments
-            .first()
-            .map(|s| &s.ident)
-            .expect("Invalid field type")
+        path
     } else {
         panic!("Invalid field type")
     };
 
-    quote! { <#type_param as async_pub_sub::Publisher>::Message }
+    if let Some(message_type) = find_publisher_message_type(type_param) {
+        quote! { #message_type }
+    } else if let Some(message_type) = find_publisher_message_type_in_bounds(type_param, input) {
+        quote! { #message_type }
+    } else {
+        quote! { <#type_param as async_pub_sub::Publisher>::Message }
+    }
+}
+
+fn find_publisher_message_type(type_param: &syn::Path) -> Option<TokenStream> {
+    let message_type = type_param
+        .segments
+        .iter()
+        .find(|segment| {
+            segment.ident == "Publisher"
+                && matches!(segment.arguments, syn::PathArguments::AngleBracketed(_))
+        })
+        .map(|segment| {
+            if let syn::PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                args, ..
+            }) = &segment.arguments
+            {
+                if let Some(syn::GenericArgument::AssocType(assoc_type)) = args.first() {
+                    if assoc_type.ident == "Message" {
+                        let message_type = assoc_type.ty.clone();
+                        return Some(quote! { #message_type });
+                    }
+                }
+            }
+            None
+        });
+
+    message_type.flatten()
+}
+
+fn find_publisher_message_type_in_bounds(
+    type_param: &syn::Path,
+    input: &DeriveInput,
+) -> Option<TokenStream> {
+    let publisher_type = type_param.segments.first().map(|s| &s.ident);
+
+    // First check generic parameters
+    for param in &input.generics.params {
+        if let GenericParam::Type(type_param) = param {
+            if Some(&type_param.ident) == publisher_type {
+                for bound in &type_param.bounds {
+                    if let TypeParamBound::Trait(t) = bound {
+                        if t.path
+                            .segments
+                            .last()
+                            .map(|s| s.ident == "Publisher")
+                            .unwrap_or(false)
+                        {
+                            if let syn::PathArguments::AngleBracketed(args) =
+                                &t.path.segments.last().unwrap().arguments
+                            {
+                                if let Some(syn::GenericArgument::AssocType(assoc_type)) =
+                                    args.args.first()
+                                {
+                                    if assoc_type.ident == "Message" {
+                                        let message_type = assoc_type.ty.clone();
+                                        return Some(quote! { #message_type });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Then check where clause
+    if let Some(where_clause) = &input.generics.where_clause {
+        for predicate in &where_clause.predicates {
+            if let syn::WherePredicate::Type(pred_type) = predicate {
+                if let Type::Path(TypePath { path, .. }) = &pred_type.bounded_ty {
+                    if path.segments.first().map(|s| &s.ident) == publisher_type {
+                        for bound in &pred_type.bounds {
+                            if let TypeParamBound::Trait(t) = bound {
+                                if t.path
+                                    .segments
+                                    .last()
+                                    .map(|s| s.ident == "Publisher")
+                                    .unwrap_or(false)
+                                {
+                                    if let syn::PathArguments::AngleBracketed(args) =
+                                        &t.path.segments.last().unwrap().arguments
+                                    {
+                                        if let Some(syn::GenericArgument::AssocType(assoc_type)) =
+                                            args.args.first()
+                                        {
+                                            if assoc_type.ident == "Message" {
+                                                let message_type = assoc_type.ty.clone();
+                                                return Some(quote! { #message_type });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
 
 fn get_concrete_publisher_message_type(field: &syn::Field) -> TokenStream {

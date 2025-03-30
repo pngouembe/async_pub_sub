@@ -33,6 +33,7 @@ pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
             impl #impl_generics async_pub_sub::Publisher for #struct_name #ty_generics #where_clause {
                 type Message = #message_type;
 
+
                 fn get_name(&self) -> &'static str {
                     async_pub_sub::Publisher::get_name(&self.#field_name)
                 }

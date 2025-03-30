@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use async_pub_sub::Subscriber;
 use async_pub_sub_macros::DeriveSubscriber;
 
@@ -13,3 +14,5 @@ where
 {
     subscriber_b: B,
 }
+
+fn main() {}

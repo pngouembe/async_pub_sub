@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use async_pub_sub_macros::rpc_interface;
 
 #[rpc_interface]
@@ -8,3 +9,5 @@ pub trait RpcInterface {
     async fn get_toto(&self) -> String;
     async fn set_tata(&mut self, tata: String);
 }
+
+fn main() {}

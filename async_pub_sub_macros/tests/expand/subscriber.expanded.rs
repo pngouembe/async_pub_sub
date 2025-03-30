@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use async_pub_sub::Subscriber;
 use async_pub_sub_macros::DeriveSubscriber;
 struct TestSubscriberA<A: Subscriber> {
@@ -42,3 +43,4 @@ where
         async_pub_sub::Subscriber::receive(&mut self.subscriber_b)
     }
 }
+fn main() {}

@@ -35,6 +35,7 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
         generate_server_trait_impl(&server_trait_name, &message_enum_name, &trait_name);
 
     let expanded = quote! {
+        #[allow(async_fn_in_trait)]
         #input
 
         #[derive(Debug)]
@@ -116,9 +117,13 @@ fn generate_client_methods<'a>(
         let name = &method.sig.ident;
         let variant_name = format_ident!("{}", name.to_string().to_upper_camel_case());
         let args = &method.sig.inputs;
-        let output = &method.sig.output;
+        let output_type = match &method.sig.output {
+            syn::ReturnType::Type(_, ty) => quote! { #ty },
+            syn::ReturnType::Default => quote! { () },
+        };
 
-        let function_signature = quote! { #name(#args) #output };
+        let function_signature =
+            quote! { #name(#args) -> impl std::future::Future<Output = #output_type> };
 
         let request_content: Vec<_> = args
             .iter()
@@ -143,12 +148,14 @@ fn generate_client_methods<'a>(
         let response_failure_message = format!("failed to receive {} response", name);
 
         quote! {
-            async fn #function_signature {
-                let (request, response) = async_pub_sub::Request::new(#request_content);
-                self.publish(#message_enum_name::#variant_name(request))
-                    .await
-                    .expect(#publish_failure_message);
-                response.await.expect(#response_failure_message)
+            fn #function_signature {
+                async move {
+                    let (request, response) = async_pub_sub::Request::new(#request_content);
+                    self.publish(#message_enum_name::#variant_name(request))
+                        .await
+                        .expect(#publish_failure_message);
+                    response.await.expect(#response_failure_message)
+                }
             }
         }
     })
@@ -230,10 +237,16 @@ fn generate_server_impl<'a>(
             }
         };
 
+        let content = if arg_names.is_empty() {
+            quote! { content: _ }
+        } else {
+            quote! { content }
+        };
+
         quote! {
             #message_enum_name::#variant_name(req) => {
                 let async_pub_sub::Request {
-                    content,
+                    #content,
                     response_sender,
                 } = req;
                 #function_call

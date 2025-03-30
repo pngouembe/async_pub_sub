@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use async_pub_sub::Publisher;
 use async_pub_sub_macros::DerivePublisher;
 struct TestPublisherA<P: Publisher> {
@@ -70,3 +71,4 @@ where
         )
     }
 }
+fn main() {}
