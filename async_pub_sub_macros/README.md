@@ -29,23 +29,26 @@ async_pub_sub_macros = "0.1.0" # Replace with the latest version
 2.  Use the derive and attribute macros in your code:
 
 ```rust
-use async_pub_sub::{Publisher, Subscriber, SimplePublisher, Result};
+use async_pub_sub::{Publisher, Subscriber, PublisherImpl, Result};
 use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber, rpc_interface};
 
 #[derive(DerivePublisher)]
 struct MyPublisher {
     #[publisher(i32)]
-    publisher: SimplePublisher<i32>,
+    publisher: PublisherImpl<i32>,
 }
 
 #[derive(DeriveSubscriber)]
-struct MySubscriber {
-    subscriber: Subscriber<Message = i32>,
+struct MySubscriber<S> 
+where 
+    S: Subscriber<Message = i32>
+{
+    subscriber: S,
 }
 
 #[rpc_interface]
 trait MyRpcInterface {
-    async fn my_method(&self, arg: i32) -> Result<String>;
+    async fn my_method(&self, arg: i32) -> String;
 }
 ```
 

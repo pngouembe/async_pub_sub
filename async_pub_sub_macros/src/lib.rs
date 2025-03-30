@@ -1,3 +1,6 @@
+//! Asynchronous publish-subscribe macro library for Rust.
+#![doc = include_str!("../README.md")]
+
 mod helpers;
 mod publisher;
 mod route;
