@@ -10,7 +10,7 @@ mod error;
 pub use error::{Error, Result};
 
 pub use publisher::{
-    DebugingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
+    DebuggingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
     PublisherLayer, PublisherWrapper, Request,
 };
 pub use subscriber::{Subscriber, SubscriberImpl, SubscriberWrapper};

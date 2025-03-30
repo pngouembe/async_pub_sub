@@ -1,4 +1,4 @@
-use async_pub_sub::{DebugingPublisherLayer, PublisherBuilder, PublisherImpl, SubscriberImpl};
+use async_pub_sub::{DebuggingPublisherLayer, PublisherBuilder, PublisherImpl, SubscriberImpl};
 use async_pub_sub::{Result, Subscriber};
 
 mod interface {
@@ -62,7 +62,7 @@ async fn test_rpc_macros() -> Result<()> {
     };
     let mut rpc_client = client::RpcClient {
         publisher: PublisherBuilder::new(PublisherImpl::new("rpc_client", 1))
-            .with_layer(DebugingPublisherLayer)
+            .with_layer(DebuggingPublisherLayer)
             .build(),
     };
 

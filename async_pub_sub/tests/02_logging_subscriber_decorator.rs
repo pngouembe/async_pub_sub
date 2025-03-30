@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use async_pub_sub::{PublisherWrapper, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{PublisherImpl, PublisherWrapper, Result, Subscriber, SubscriberImpl};
 
 struct LoggingSubscriber<S> {
     publisher_name: Option<&'static str>,

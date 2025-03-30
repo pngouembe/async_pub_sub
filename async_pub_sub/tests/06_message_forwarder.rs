@@ -108,7 +108,7 @@ async fn test_message_forwarder() -> Result<()> {
             .publish(request)
             .await
             .expect("request published successfully");
-        assert_eq!(response.await.expect("request successul"), 43);
+        assert_eq!(response.await.expect("request successful"), 43);
     });
 
     let subscriber_task = tokio::spawn(async move {

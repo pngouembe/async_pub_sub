@@ -4,15 +4,21 @@ use futures::{future::BoxFuture, FutureExt, Stream};
 
 use crate::{Publisher, PublisherLayer, Result};
 
-pub struct DebugingPublisherLayer;
+/// A middleware layer that adds debug logging capabilities to a publisher.
+/// When messages are published, it will log them using the debug format.
+pub struct DebuggingPublisherLayer;
 
-impl<P> PublisherLayer<P> for DebugingPublisherLayer
+impl<P> PublisherLayer<P> for DebuggingPublisherLayer
 where
     P: Publisher + Send + Sync,
     P::Message: Debug,
 {
     type PublisherType = DebugPublisher<P>;
 
+    /// Creates a new `DebugPublisher` by wrapping the provided publisher.
+    ///
+    /// # Arguments
+    /// * `publisher` - The underlying publisher to wrap with debug logging
     fn layer(&self, publisher: P) -> Self::PublisherType {
         DebugPublisher {
             subscriber_name: None,
@@ -21,11 +27,16 @@ where
     }
 }
 
+/// A publisher wrapper that adds debug logging capabilities to an existing publisher.
+/// It logs messages when they are published, showing the publisher name, subscriber name,
+/// and the debug representation of the message.
 pub struct DebugPublisher<P>
 where
     P: Publisher,
 {
+    /// The name of the subscriber receiving messages, set when get_message_stream is called
     subscriber_name: Option<&'static str>,
+    /// The underlying publisher being wrapped
     publisher: P,
 }
 
@@ -37,10 +48,17 @@ where
 {
     type Message = P::Message;
 
+    /// Returns the name of the underlying publisher
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }
 
+    /// Publishes a message while logging its debug representation.
+    ///
+    /// # Arguments
+    /// * `message` - The message to publish
+    ///
+    /// Logs the message in the format: "[publisher_name] -> [subscriber_name]: message_debug_format"
     fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
@@ -57,6 +75,11 @@ where
         .boxed()
     }
 
+    /// Gets a message stream for the given subscriber name.
+    /// Stores the subscriber name for use in debug logging.
+    ///
+    /// # Arguments
+    /// * `subscriber_name` - The name of the subscriber requesting the stream
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,

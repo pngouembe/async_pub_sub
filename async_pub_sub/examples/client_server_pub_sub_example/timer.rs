@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use async_pub_sub::{DebugingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl};
+use async_pub_sub::{DebuggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl};
 use async_pub_sub_macros::DerivePublisher;
 use rand::Rng;
 
@@ -30,17 +30,17 @@ impl TimerService {
         Self {
             data_consumer_publisher: Box::new(
                 PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebugingPublisherLayer)
+                    .with_layer(DebuggingPublisherLayer)
                     .build(),
             ),
             data_producer_publisher: Box::new(
                 PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebugingPublisherLayer)
+                    .with_layer(DebuggingPublisherLayer)
                     .build(),
             ),
             cache_publisher: Box::new(
                 PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebugingPublisherLayer)
+                    .with_layer(DebuggingPublisherLayer)
                     .build(),
             ),
         }

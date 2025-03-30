@@ -1,5 +1,5 @@
 use async_pub_sub::{
-    DebugingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl, SubscriberImpl,
+    DebuggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl, SubscriberImpl,
 };
 use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
 
@@ -74,7 +74,7 @@ impl CacheClient {
         Self {
             rpc_publisher: Box::new(
                 PublisherBuilder::new(PublisherImpl::new(name, buffer_size))
-                    .with_layer(DebugingPublisherLayer)
+                    .with_layer(DebuggingPublisherLayer)
                     .build(),
             ),
         }
