@@ -1,0 +1,5 @@
+error: DeriveSubscriber macro only supports structs with named fields
+ --> tests/fail/derive_subscriber_on_unamed_field_struct.rs:4:1
+  |
+4 | struct InvalidSubscriber(String);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,7 @@
+error: DeriveSubscriber macro only supports structs
+ --> tests/fail/derive_subscriber_on_enum.rs:4:1
+  |
+4 | / enum InvalidSubscriber {
+5 | |     Toto,
+6 | | }
+  | |_^

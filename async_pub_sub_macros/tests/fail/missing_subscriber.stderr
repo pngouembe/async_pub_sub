@@ -1,7 +1,7 @@
-error: proc-macro derive panicked
- --> tests/fail/missing_subscriber.rs:3:10
+error: DeriveSubscriber macro requires that your struct must have at least one field that implements the Subscriber trait or is marked with #[subscriber]
+ --> tests/fail/missing_subscriber.rs:4:1
   |
-3 | #[derive(DeriveSubscriber)]
-  |          ^^^^^^^^^^^^^^^^
-  |
-  = help: message: Struct must have at least one field that implements the Subscriber trait or is marked with #[subscriber]
+4 | / struct InvalidSubscriber {
+5 | |     other_field: String,
+6 | | }
+  | |_^
