@@ -1,7 +1,7 @@
-error: proc-macro derive panicked
- --> tests/fail/missing_publisher.rs:3:10
+error: DerivePublisher macro requires that your struct must have at least one field that implements the Publisher trait or is marked with #[publisher]
+ --> tests/fail/missing_publisher.rs:4:1
   |
-3 | #[derive(DerivePublisher)]
-  |          ^^^^^^^^^^^^^^^
-  |
-  = help: message: Struct must have at least one field that implements the Publisher trait or is marked with #[publisher]
+4 | / struct InvalidPublisher {
+5 | |     other_field: String,
+6 | | }
+  | |_^
