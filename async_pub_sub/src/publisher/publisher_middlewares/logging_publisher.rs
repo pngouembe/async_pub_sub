@@ -2,23 +2,20 @@ use std::{fmt::Display, pin::Pin};
 
 use futures::{future::BoxFuture, FutureExt, Stream};
 
-use crate::{Publisher, PublisherLayer, Result};
+use crate::{Layer, Publisher, Result};
 
 /// A publisher middleware layer that adds logging capabilities to any publisher.
 /// This layer will log all messages that are published through the publisher.
 pub struct LoggingPublisherLayer;
 
-/// Implementation of the PublisherLayer trait for LoggingPublisherLayer.
-/// This allows wrapping any publisher that implements the Publisher trait with logging functionality.
-impl<P> PublisherLayer<P> for LoggingPublisherLayer
+impl<P> Layer<P> for LoggingPublisherLayer
 where
-    P: Publisher + Send + Sync,
+    P: Publisher + Send,
     P::Message: Display,
 {
-    type PublisherType = LoggingPublisher<P>;
+    type LayerType = LoggingPublisher<P>;
 
-    /// Creates a new LoggingPublisher by wrapping the provided publisher.
-    fn layer(&self, publisher: P) -> Self::PublisherType {
+    fn layer(&self, publisher: P) -> Self::LayerType {
         LoggingPublisher {
             subscriber_name: None,
             publisher,

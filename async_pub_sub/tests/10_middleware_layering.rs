@@ -1,18 +1,18 @@
 use std::{fmt::Display, pin::Pin};
 
-use async_pub_sub::{Publisher, PublisherImpl, PublisherLayer, Result, SubscriberImpl};
+use async_pub_sub::{Layer, Publisher, PublisherImpl, Result, SubscriberImpl};
 use futures::{future::BoxFuture, FutureExt, Stream};
 
 struct LoggingPublisherLayer;
 
-impl<P> PublisherLayer<P> for LoggingPublisherLayer
+impl<P> Layer<P> for LoggingPublisherLayer
 where
-    P: Publisher + Send + Sync,
+    P: Publisher + Send,
     P::Message: Display,
 {
-    type PublisherType = LoggingPublisher<P>;
+    type LayerType = LoggingPublisher<P>;
 
-    fn layer(&self, publisher: P) -> Self::PublisherType {
+    fn layer(&self, publisher: P) -> Self::LayerType {
         LoggingPublisher {
             subscriber_name: None,
             publisher,

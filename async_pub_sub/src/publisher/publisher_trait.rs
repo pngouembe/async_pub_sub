@@ -63,27 +63,6 @@ where
     }
 }
 
-/// A trait for creating layered publishers.
-///
-/// This trait enables the creation of publisher middleware that can wrap
-/// and extend the functionality of other publishers.
-pub trait PublisherLayer<InnerPublisherType>
-where
-    InnerPublisherType: Publisher,
-{
-    /// The type of publisher that this layer produces.
-    type PublisherType: Publisher;
-
-    /// Wraps an inner publisher with this layer.
-    ///
-    /// # Arguments
-    /// * `publisher` - The inner publisher to wrap
-    ///
-    /// # Returns
-    /// A new publisher wrapped with this layer's functionality.
-    fn layer(&self, publisher: InnerPublisherType) -> Self::PublisherType;
-}
-
 /// A trait for types that wrap a publisher.
 ///
 /// This trait provides a default implementation for publisher operations

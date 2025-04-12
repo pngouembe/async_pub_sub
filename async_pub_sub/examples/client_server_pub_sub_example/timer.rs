@@ -29,19 +29,19 @@ impl TimerService {
     pub fn new() -> Self {
         Self {
             data_consumer_publisher: Box::new(
-                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebuggingPublisherLayer)
-                    .build(),
+                PublisherBuilder::new()
+                    .layer(DebuggingPublisherLayer)
+                    .publisher(PublisherImpl::new(NAME, 10)),
             ),
             data_producer_publisher: Box::new(
-                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebuggingPublisherLayer)
-                    .build(),
+                PublisherBuilder::new()
+                    .layer(DebuggingPublisherLayer)
+                    .publisher(PublisherImpl::new(NAME, 10)),
             ),
             cache_publisher: Box::new(
-                PublisherBuilder::new(PublisherImpl::new(NAME, 10))
-                    .with_layer(DebuggingPublisherLayer)
-                    .build(),
+                PublisherBuilder::new()
+                    .layer(DebuggingPublisherLayer)
+                    .publisher(PublisherImpl::new(NAME, 10)),
             ),
         }
     }

@@ -1,50 +1,46 @@
-use crate::{Publisher, PublisherLayer};
+use crate::{utils::IdentityLayer, Layer, Publisher};
 
-// TODO: rework, take inspiration on the tower crate
 /// A builder pattern implementation for constructing a publisher with middleware layers.
-/// This struct allows for composing multiple middleware layers around a base publisher.
-pub struct PublisherBuilder<P>
-where
-    P: Publisher,
-{
-    publisher: P,
+/// This struct allows for composing multiple middleware layers.
+#[derive(Clone)]
+pub struct PublisherBuilder<L = IdentityLayer> {
+    layer: L,
 }
 
-impl<P> PublisherBuilder<P>
-where
-    P: Publisher,
-{
-    /// Creates a new `PublisherBuilder` with a base publisher.
+impl Default for PublisherBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PublisherBuilder {
+    /// Creates a new `PublisherBuilder` with no layers.
+    pub fn new() -> Self {
+        Self {
+            layer: IdentityLayer::new(),
+        }
+    }
+}
+
+impl<L> PublisherBuilder<L> {
+    /// Adds a middleware layer to the builder.
     ///
     /// # Arguments
-    ///
-    /// * `publisher` - The base publisher implementation to wrap with middleware layers.
-    pub fn new(publisher: P) -> Self {
-        Self { publisher }
+    /// * `layer` - The middleware layer to add
+    pub fn layer<NewLayer>(self, layer: NewLayer) -> PublisherBuilder<NewLayer> {
+        PublisherBuilder { layer }
     }
 
-    /// Adds a middleware layer to the publisher.
+    /// Wraps a publisher with the composed layers.
     ///
     /// # Arguments
-    ///
-    /// * `layer` - The middleware layer to add.
-    ///
-    /// # Returns
-    ///
-    /// Returns a new `PublisherBuilder` with the layer applied to the publisher.
-    pub fn with_layer<Layer>(self, layer: Layer) -> PublisherBuilder<Layer::PublisherType>
+    /// * `publisher` - The publisher to wrap with the composed layers
+    pub fn publisher<P>(self, publisher: P) -> L::LayerType
     where
-        Layer: PublisherLayer<P>,
+        P: Publisher,
+        L: Layer<P>,
+        L::LayerType: Publisher,
     {
-        PublisherBuilder::new(layer.layer(self.publisher))
-    }
-
-    /// Finalizes the builder and returns the constructed publisher with all applied layers.
-    ///
-    /// # Returns
-    ///
-    /// Returns the final publisher with all middleware layers applied.
-    pub fn build(self) -> P {
-        self.publisher
+        Layer::layer(&self.layer, publisher)
     }
 }

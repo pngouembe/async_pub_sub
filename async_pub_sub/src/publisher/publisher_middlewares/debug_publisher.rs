@@ -2,24 +2,20 @@ use std::{fmt::Debug, pin::Pin};
 
 use futures::{future::BoxFuture, FutureExt, Stream};
 
-use crate::{Publisher, PublisherLayer, Result};
+use crate::{Layer, Publisher, Result};
 
 /// A middleware layer that adds debug logging capabilities to a publisher.
 /// When messages are published, it will log them using the debug format.
 pub struct DebuggingPublisherLayer;
 
-impl<P> PublisherLayer<P> for DebuggingPublisherLayer
+impl<P> Layer<P> for DebuggingPublisherLayer
 where
-    P: Publisher + Send + Sync,
+    P: Publisher + Send,
     P::Message: Debug,
 {
-    type PublisherType = DebugPublisher<P>;
+    type LayerType = DebugPublisher<P>;
 
-    /// Creates a new `DebugPublisher` by wrapping the provided publisher.
-    ///
-    /// # Arguments
-    /// * `publisher` - The underlying publisher to wrap with debug logging
-    fn layer(&self, publisher: P) -> Self::PublisherType {
+    fn layer(&self, publisher: P) -> Self::LayerType {
         DebugPublisher {
             subscriber_name: None,
             publisher,

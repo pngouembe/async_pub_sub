@@ -73,9 +73,9 @@ impl CacheClient {
     pub fn new(name: &'static str, buffer_size: usize) -> Self {
         Self {
             rpc_publisher: Box::new(
-                PublisherBuilder::new(PublisherImpl::new(name, buffer_size))
-                    .with_layer(DebuggingPublisherLayer)
-                    .build(),
+                PublisherBuilder::new()
+                    .layer(DebuggingPublisherLayer)
+                    .publisher(PublisherImpl::new(name, buffer_size)),
             ),
         }
     }

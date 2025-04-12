@@ -1,4 +1,7 @@
-use async_pub_sub::{DebuggingPublisherLayer, PublisherBuilder, PublisherImpl, SubscriberImpl};
+use async_pub_sub::{
+    DebuggingPublisherLayer, DebuggingSubscriberLayer, PublisherBuilder, PublisherImpl,
+    SubscriberBuilder, SubscriberImpl,
+};
 use async_pub_sub::{Result, Subscriber};
 
 mod interface {
@@ -58,13 +61,14 @@ use interface::RpcInterfaceServer;
 #[test_log::test(tokio::test)]
 async fn test_rpc_macros() -> Result<()> {
     let mut rpc_server = server::RpcServer {
-        subscriber: SubscriberImpl::new("rpc_server"),
+        subscriber: SubscriberBuilder::new()
+            .layer(DebuggingSubscriberLayer)
+            .subscriber(SubscriberImpl::new("rpc_server")),
     };
-    let mut rpc_client = client::RpcClient {
-        publisher: PublisherBuilder::new(PublisherImpl::new("rpc_client", 1))
-            .with_layer(DebuggingPublisherLayer)
-            .build(),
-    };
+    let publisher = PublisherBuilder::new()
+        .layer(DebuggingPublisherLayer)
+        .publisher(PublisherImpl::new("rpc_client", 1));
+    let mut rpc_client = client::RpcClient { publisher };
 
     rpc_server.subscribe_to(&mut rpc_client)?;
 

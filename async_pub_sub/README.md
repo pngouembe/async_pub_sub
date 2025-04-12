@@ -33,3 +33,7 @@ See the [examples/](examples/) directory for usage examples.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Note
+
+This project is inspired by the [Tower](https://github.com/tower-rs/tower/tree/master) project

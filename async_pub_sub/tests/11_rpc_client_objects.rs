@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
 use async_pub_sub::{
-    LoggingPublisherLayer, Publisher, PublisherImpl, PublisherLayer, Request, Result,
-    SubscriberImpl,
+    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, Request, Result, SubscriberImpl,
 };
 
 struct RpcClient<P> {

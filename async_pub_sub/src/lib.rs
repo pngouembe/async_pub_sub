@@ -11,12 +11,16 @@ pub use error::{Error, Result};
 
 pub use publisher::{
     DebuggingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
-    PublisherLayer, PublisherWrapper, Request,
+    PublisherWrapper, Request,
 };
-pub use subscriber::{Subscriber, SubscriberImpl, SubscriberWrapper};
-pub use utils::LoggingForwarder;
+pub use subscriber::{
+    DebuggingSubscriberLayer, LoggingSubscriberLayer, Subscriber, SubscriberBuilder,
+    SubscriberImpl, SubscriberWrapper,
+};
+pub use utils::{Layer, LoggingForwarder};
+
+// Re-export futures for use in macros and client code
+pub use futures;
 
 #[cfg(feature = "macros")]
 pub use async_pub_sub_macros as macros;
-
-pub use futures;
