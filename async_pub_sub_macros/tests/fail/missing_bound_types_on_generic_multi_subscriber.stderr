@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `SubscriberWrapper<_>` for type `TestSubscriber<_, _>`
+error[E0119]: conflicting implementations of trait `SubscriberWrapper<<_ as Subscriber>::Message>` for type `TestSubscriber<_, _>`
  --> tests/fail/missing_bound_types_on_generic_multi_subscriber.rs:6:10
   |
 6 | #[derive(DeriveSubscriber)]

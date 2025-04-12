@@ -102,9 +102,7 @@ pub fn pub_sub_type_entry_from_where_predicate_opt(
         return None;
     };
 
-    let Some(ident) = path.get_ident() else {
-        return None;
-    };
+    let ident = path.get_ident()?;
 
     let message_type = bounds.iter().find_map(|bound| {
         let syn::TypeParamBound::Trait(trait_bound) = bound else {

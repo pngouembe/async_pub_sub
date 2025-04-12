@@ -108,7 +108,7 @@ where
     ///
     /// # Returns
     /// * `Result<Pin<Box<dyn Stream<Item = Message>>>>` - A stream of messages if successful,
-    ///    Err with description if the forwarder is already bound to another subscriber
+    ///   Err with description if the forwarder is already bound to another subscriber
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,

@@ -8,7 +8,7 @@ use crate::helpers::{find_pub_sub_types_in_generics, message_type_from_path_opt}
 
 pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
     InputStruct::try_from(input)
-        .and_then(|input| Ok(input.generate_code()))
+        .map(|input| input.generate_code())
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -116,9 +116,7 @@ impl SubscriberField {
             return None;
         };
 
-        let Some(ident) = path.get_ident() else {
-            return None;
-        };
+        let ident = path.get_ident()?;
 
         let message_type = generic_subscribers
             .get(ident)
@@ -186,7 +184,7 @@ fn find_all_subscribers(input: &DeriveInput) -> Result<Vec<SubscriberField>, syn
             syn::Fields::Named(fields_named) => &fields_named.named,
             _ => {
                 return Err(syn::Error::new_spanned(
-                    &input,
+                    input,
                     "DeriveSubscriber macro only supports structs with named fields",
                 ))
             }

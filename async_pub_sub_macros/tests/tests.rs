@@ -21,7 +21,7 @@ fn test_successful_compilation() {
                 .path()
                 .file_name()
                 .and_then(|name| name.to_str())
-                .map_or(false, |name| name.ends_with("expanded.rs"))
+                .is_some_and(|name| name.ends_with("expanded.rs"))
         })
         .for_each(|entry| t.pass(entry.path()));
 }

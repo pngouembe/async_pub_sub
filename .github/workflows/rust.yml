@@ -16,9 +16,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install cargo-expand
-      run: cargo install cargo-expand
+    - uses: cargo-bins/cargo-binstall@main 
+    - name: Install rust tools
+      run: cargo binstall --no-confirm --locked cargo-expand cargo-nextest
+    - name: Run clippy
+      run: cargo clippy --verbose --all-features --all-targets -- -D warnings
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo nextest run --verbose --workspace --all-features --all-targets --no-fail-fast 
+    - name: Run doc tests
+      run: cargo test --verbose --doc --all-features
