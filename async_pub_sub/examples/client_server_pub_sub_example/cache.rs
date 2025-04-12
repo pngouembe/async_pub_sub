@@ -10,7 +10,7 @@ use crate::{
 
 const NAME: &str = "Cache";
 
-#[rpc_interface]
+#[rpc_interface(Debug)]
 pub trait CacheInterface {
     async fn get_data(&self) -> String;
     async fn set_data(&mut self, data: String);

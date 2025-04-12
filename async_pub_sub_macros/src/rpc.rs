@@ -1,13 +1,35 @@
 use heck::ToUpperCamelCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::Item;
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+    Ident, Item, Token,
+};
 
-pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
+struct AttributeArgs {
+    derives: Punctuated<Ident, Token![,]>,
+}
+
+impl Parse for AttributeArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(AttributeArgs {
+            derives: input.parse_terminated(Ident::parse, Token![,])?,
+        })
+    }
+}
+
+pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStream {
+    let attrs = parse_macro_input!(attr as AttributeArgs);
+
     let input = match input {
         Item::Trait(input) => input,
         _ => panic!("The rpc_interface macro can only be used on trait definitions"),
     };
+
+    // Extract derives from parsed attributes and convert to iterator
+    let derives = attrs.derives.iter();
 
     let trait_name = input.ident.clone();
     let message_enum_name = format_ident!("{}Message", trait_name);
@@ -38,7 +60,7 @@ pub(crate) fn generate_rpc_interface(input: Item) -> TokenStream {
         #[allow(async_fn_in_trait)]
         #input
 
-        #[derive(Debug)]
+        #[derive(#(#derives),*)]
         pub enum #message_enum_name {
             #(#enum_variants)*
         }
@@ -150,11 +172,11 @@ fn generate_client_methods<'a>(
         quote! {
             fn #function_signature {
                 async move {
-                    let (request, response) = async_pub_sub::Request::new(#request_content);
-                    self.publish(#message_enum_name::#variant_name(request))
-                        .await
-                        .expect(#publish_failure_message);
-                    response.await.expect(#response_failure_message)
+                let (request, response) = async_pub_sub::Request::new(#request_content);
+                self.publish(#message_enum_name::#variant_name(request))
+                    .await
+                    .expect(#publish_failure_message);
+                response.await.expect(#response_failure_message)
                 }
             }
         }

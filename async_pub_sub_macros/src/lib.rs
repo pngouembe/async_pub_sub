@@ -96,7 +96,7 @@ pub fn derive_publisher(input: TokenStream) -> TokenStream {
 /// Generates the necessary code for defining RPC interfaces.
 ///
 /// This macro generates:
-/// - Message enums for RPC communication
+/// - Message enums for RPC communication (with optional derive attributes)
 /// - Client traits
 /// - Server traits
 ///
@@ -104,15 +104,28 @@ pub fn derive_publisher(input: TokenStream) -> TokenStream {
 /// ```rust
 /// use async_pub_sub_macros::rpc_interface;
 ///
+/// // Basic usage
 /// #[rpc_interface]
 /// trait MyRpcInterface {
 ///     async fn my_method(&self, arg: i32) -> String;
 /// }
+///
+/// // With derive attributes for the generated message enum
+/// #[rpc_interface(Debug)]
+/// trait MyLoggableRpcInterface {
+///     async fn get_data(&self) -> String;
+///     async fn set_data(&mut self, data: String);
+/// }
 /// ```
+///
+/// The derive attributes provided to the macro will be applied to the generated
+/// message enum. Common derive attributes.
+/// As an example, you might want to add the `Debug` derive attribute to the
+/// generated message enum to enable debugging the communication between you client and you server.
 #[proc_macro_attribute]
-pub fn rpc_interface(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn rpc_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::Item);
-    rpc::generate_rpc_interface(input)
+    rpc::generate_rpc_interface(attr, input)
 }
 
 /// Creates a connection between a single publisher and subscriber.

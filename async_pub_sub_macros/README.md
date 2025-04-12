@@ -6,7 +6,7 @@ This crate provides procedural macros for the [async_pub_sub](../async_pub_sub/R
 
 *   **`DerivePublisher`**: A derive macro to automatically implement the [`Publisher`](../async_pub_sub/src/publisher/mod.rs) trait for structs. It supports single and multi-publisher scenarios, including specifying message types via attributes.
 *   **`DeriveSubscriber`**: A derive macro to automatically implement the [`Subscriber`](../async_pub_sub/src/subscriber/mod.rs) trait for structs. It supports single and multi-subscriber scenarios.
-*   **`rpc_interface`**: An attribute macro that generates the necessary code for defining RPC interfaces, including message enums, client traits, and server traits.
+*   **`rpc_interface`**: An attribute macro that generates the necessary code for defining RPC interfaces, including message enums (with optional derive attributes), client traits, and server traits.
 *   **`route` and `routes`**: Macros for easily connecting publishers and subscribers.
 
 ## Usage
@@ -25,19 +25,20 @@ async_pub_sub_macros = "0.1.0" # Replace with the latest version
 > async_pub_sub = { version = "0.1.0", features = ["macros"] } # Replace with the latest version
 > ```
 
-
 2.  Use the derive and attribute macros in your code:
 
 ```rust
 use async_pub_sub::{Publisher, Subscriber, PublisherImpl, Result};
 use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber, rpc_interface};
 
+// Publisher example
 #[derive(DerivePublisher)]
 struct MyPublisher {
     #[publisher(i32)]
     publisher: PublisherImpl<i32>,
 }
 
+// Subscriber example
 #[derive(DeriveSubscriber)]
 struct MySubscriber<S> 
 where 
@@ -46,9 +47,17 @@ where
     subscriber: S,
 }
 
+// RPC interface example
 #[rpc_interface]
 trait MyRpcInterface {
     async fn my_method(&self, arg: i32) -> String;
+}
+
+// RPC interface with custom derives for the message enum
+#[rpc_interface(Debug)]
+trait MyLoggableRpcInterface {
+    async fn get_data(&self) -> String;
+    async fn set_data(&mut self, data: String);
 }
 ```
 
