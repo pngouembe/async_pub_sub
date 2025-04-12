@@ -3,6 +3,8 @@ use quote::quote;
 use std::{collections::HashMap, fmt::Debug};
 use syn::DeriveInput;
 
+use crate::helpers::{find_pub_sub_types_in_generics, message_type_from_path_opt};
+
 pub(crate) fn derive_publisher_impl(input: DeriveInput) -> TokenStream {
     InputStruct::try_from(input)
         .and_then(|input| Ok(input.generate_code()))
@@ -120,7 +122,7 @@ impl PublisherField {
         let message_type = generic_publishers
             .get(ident)
             .cloned()
-            .or_else(|| publisher_message_type_from_path_opt(path))?;
+            .or_else(|| message_type_from_path_opt(path, "Publisher"))?;
 
         let field_name = field.ident.clone().map(|ident| quote! { #ident })?;
 
@@ -177,8 +179,7 @@ impl PublisherField {
 }
 
 fn find_all_publishers(input: &DeriveInput) -> Result<Vec<PublisherField>, syn::Error> {
-    let mut generic_publishers = find_publishers_in_generic_type_params(input);
-    generic_publishers.extend(find_publishers_in_where_clauses(input).into_iter());
+    let generic_publishers = find_pub_sub_types_in_generics("Publisher", &input.generics);
 
     let fields = match &input.data {
         syn::Data::Struct(data) => match &data.fields {
@@ -208,158 +209,4 @@ fn find_all_publishers(input: &DeriveInput) -> Result<Vec<PublisherField>, syn::
         .collect();
 
     Ok(publisher_fields)
-}
-
-fn find_publishers_in_generic_type_params(
-    input: &DeriveInput,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
-    input
-        .generics
-        .type_params()
-        .filter_map(try_type_param_to_publisher_ident_message_type_pair)
-        .collect()
-}
-
-fn try_type_param_to_publisher_ident_message_type_pair(
-    type_param: &syn::TypeParam,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
-    let syn::TypeParam { ident, bounds, .. } = type_param;
-
-    bounds.iter().find_map(|bound| {
-        let syn::TypeParamBound::Trait(trait_bound) = bound else {
-            return None;
-        };
-
-        let path = &trait_bound.path;
-
-        if path.is_ident("Publisher") {
-            return Some((
-                ident.clone(),
-                quote! { <#ident as async_pub_sub::Publisher>::Message },
-            ));
-        }
-
-        let message_type = bounds.iter().find_map(|bound| {
-            let syn::TypeParamBound::Trait(trait_bound) = bound else {
-                return None;
-            };
-
-            let path = &trait_bound.path;
-
-            if path.is_ident("Publisher") {
-                return Some(quote! { <#ident as async_pub_sub::Publisher>::Message });
-            }
-
-            path.segments
-                .iter()
-                .find_map(publisher_message_type_from_path_segment_opt)
-                .or(Some(
-                    quote! { <#ident as async_pub_sub::Publisher>::Message },
-                ))
-        })?;
-
-        Some((type_param.ident.clone(), message_type))
-    })
-}
-
-fn find_publishers_in_where_clauses(
-    input: &DeriveInput,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
-    input
-        .generics
-        .where_clause
-        .as_ref()
-        .map(|where_clause| {
-            where_clause
-                .predicates
-                .iter()
-                .filter_map(try_where_predicate_to_publisher_ident_message_type_pair)
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn try_where_predicate_to_publisher_ident_message_type_pair(
-    predicate: &syn::WherePredicate,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
-    let syn::WherePredicate::Type(syn::PredicateType {
-        bounded_ty, bounds, ..
-    }) = predicate
-    else {
-        return None;
-    };
-
-    let syn::Type::Path(syn::TypePath { path, .. }) = bounded_ty else {
-        return None;
-    };
-
-    let Some(ident) = path.get_ident() else {
-        return None;
-    };
-
-    let message_type = bounds.iter().find_map(|bound| {
-        let syn::TypeParamBound::Trait(trait_bound) = bound else {
-            return None;
-        };
-
-        let path = &trait_bound.path;
-
-        if path.is_ident("Publisher") {
-            return Some(quote! { <#ident as async_pub_sub::Publisher>::Message });
-        }
-
-        path.segments
-            .iter()
-            .find_map(publisher_message_type_from_path_segment_opt)
-            .or(Some(
-                quote! { <#ident as async_pub_sub::Publisher>::Message },
-            ))
-    })?;
-
-    Some((ident.clone(), message_type))
-}
-
-fn publisher_message_type_from_path_opt(path: &syn::Path) -> Option<proc_macro2::TokenStream> {
-    let ident = path.get_ident()?;
-
-    if ident != "Publisher" {
-        return None;
-    }
-
-    if path.is_ident("Publisher") {
-        return Some(quote! { <#ident as async_pub_sub::Publisher>::Message });
-    }
-
-    path.segments
-        .iter()
-        .find_map(publisher_message_type_from_path_segment_opt)
-        .or(Some(
-            quote! { <#ident as async_pub_sub::Publisher>::Message },
-        ))
-}
-
-fn publisher_message_type_from_path_segment_opt(
-    segment: &syn::PathSegment,
-) -> Option<proc_macro2::TokenStream> {
-    let syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) =
-        &segment.arguments
-    else {
-        return None;
-    };
-
-    args.iter().find_map(|arg| {
-        let syn::GenericArgument::AssocType(assoc_ty) = arg else {
-            return None;
-        };
-
-        if assoc_ty.ident != "Message" {
-            return None;
-        }
-
-        let syn::Type::Path(syn::TypePath { path, .. }) = &assoc_ty.ty else {
-            return None;
-        };
-
-        path.get_ident().map(|ident| quote! { #ident })
-    })
 }

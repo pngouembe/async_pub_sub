@@ -4,6 +4,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::DeriveInput;
 
+use crate::helpers::{find_pub_sub_types_in_generics, message_type_from_path_opt};
+
 pub(crate) fn derive_subscriber_impl(input: DeriveInput) -> TokenStream {
     InputStruct::try_from(input)
         .and_then(|input| Ok(input.generate_code()))
@@ -121,7 +123,7 @@ impl SubscriberField {
         let message_type = generic_subscribers
             .get(ident)
             .cloned()
-            .or_else(|| subscriber_message_type_from_path_opt(path))?;
+            .or_else(|| message_type_from_path_opt(path, "Subscriber"))?;
 
         let field_name = field.ident.clone().map(|ident| quote! { #ident })?;
 
@@ -177,8 +179,7 @@ impl SubscriberField {
 }
 
 fn find_all_subscribers(input: &DeriveInput) -> Result<Vec<SubscriberField>, syn::Error> {
-    let mut generic_subscribers = find_subscribers_in_generic_type_params(input);
-    generic_subscribers.extend(find_subscribers_in_where_clauses(input).into_iter());
+    let generic_subscribers = find_pub_sub_types_in_generics("Subscriber", &input.generics);
 
     let fields = match &input.data {
         syn::Data::Struct(data) => match &data.fields {
@@ -208,158 +209,4 @@ fn find_all_subscribers(input: &DeriveInput) -> Result<Vec<SubscriberField>, syn
         .collect();
 
     Ok(subscriber_fields)
-}
-
-fn find_subscribers_in_generic_type_params(
-    input: &DeriveInput,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
-    input
-        .generics
-        .type_params()
-        .filter_map(try_type_param_to_subscriber_ident_message_type_pair)
-        .collect()
-}
-
-fn try_type_param_to_subscriber_ident_message_type_pair(
-    type_param: &syn::TypeParam,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
-    let syn::TypeParam { ident, bounds, .. } = type_param;
-
-    bounds.iter().find_map(|bound| {
-        let syn::TypeParamBound::Trait(trait_bound) = bound else {
-            return None;
-        };
-
-        let path = &trait_bound.path;
-
-        if path.is_ident("Subscriber") {
-            return Some((
-                ident.clone(),
-                quote! { <#ident as async_pub_sub::Subscriber>::Message },
-            ));
-        }
-
-        let message_type = bounds.iter().find_map(|bound| {
-            let syn::TypeParamBound::Trait(trait_bound) = bound else {
-                return None;
-            };
-
-            let path = &trait_bound.path;
-
-            if path.is_ident("Subscriber") {
-                return Some(quote! { <#ident as async_pub_sub::Subscriber>::Message });
-            }
-
-            path.segments
-                .iter()
-                .find_map(subscriber_message_type_from_path_segment_opt)
-                .or(Some(
-                    quote! { <#ident as async_pub_sub::Subscriber>::Message },
-                ))
-        })?;
-
-        Some((type_param.ident.clone(), message_type))
-    })
-}
-
-fn find_subscribers_in_where_clauses(
-    input: &DeriveInput,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
-    input
-        .generics
-        .where_clause
-        .as_ref()
-        .map(|where_clause| {
-            where_clause
-                .predicates
-                .iter()
-                .filter_map(try_where_predicate_to_subscriber_ident_message_type_pair)
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn try_where_predicate_to_subscriber_ident_message_type_pair(
-    predicate: &syn::WherePredicate,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
-    let syn::WherePredicate::Type(syn::PredicateType {
-        bounded_ty, bounds, ..
-    }) = predicate
-    else {
-        return None;
-    };
-
-    let syn::Type::Path(syn::TypePath { path, .. }) = bounded_ty else {
-        return None;
-    };
-
-    let Some(ident) = path.get_ident() else {
-        return None;
-    };
-
-    let message_type = bounds.iter().find_map(|bound| {
-        let syn::TypeParamBound::Trait(trait_bound) = bound else {
-            return None;
-        };
-
-        let path = &trait_bound.path;
-
-        if path.is_ident("Subscriber") {
-            return Some(quote! { <#ident as async_pub_sub::Subscriber>::Message });
-        }
-
-        path.segments
-            .iter()
-            .find_map(subscriber_message_type_from_path_segment_opt)
-            .or(Some(
-                quote! { <#ident as async_pub_sub::Subscriber>::Message },
-            ))
-    })?;
-
-    Some((ident.clone(), message_type))
-}
-
-fn subscriber_message_type_from_path_opt(path: &syn::Path) -> Option<proc_macro2::TokenStream> {
-    let ident = path.get_ident()?;
-
-    if ident != "Subscriber" {
-        return None;
-    }
-
-    if path.is_ident("Subscriber") {
-        return Some(quote! { <#ident as async_pub_sub::Subscriber>::Message });
-    }
-
-    path.segments
-        .iter()
-        .find_map(subscriber_message_type_from_path_segment_opt)
-        .or(Some(
-            quote! { <#ident as async_pub_sub::Subscriber>::Message },
-        ))
-}
-
-fn subscriber_message_type_from_path_segment_opt(
-    segment: &syn::PathSegment,
-) -> Option<proc_macro2::TokenStream> {
-    let syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) =
-        &segment.arguments
-    else {
-        return None;
-    };
-
-    args.iter().find_map(|arg| {
-        let syn::GenericArgument::AssocType(assoc_ty) = arg else {
-            return None;
-        };
-
-        if assoc_ty.ident != "Message" {
-            return None;
-        }
-
-        let syn::Type::Path(syn::TypePath { path, .. }) = &assoc_ty.ty else {
-            return None;
-        };
-
-        path.get_ident().map(|ident| quote! { #ident })
-    })
 }
