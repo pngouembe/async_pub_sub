@@ -9,21 +9,6 @@ mod interface {
         async fn prefix_with_bar(&self, string: String) -> String;
     }
 }
-mod client {
-    use super::interface::{RpcInterfaceClient, RpcInterfaceMessage};
-    use async_pub_sub::Publisher;
-    use async_pub_sub_macros::DerivePublisher;
-
-    #[derive(DerivePublisher)]
-    pub struct RpcClient<P>
-    where
-        P: Publisher,
-    {
-        pub publisher: P,
-    }
-
-    impl<P> RpcInterfaceClient for RpcClient<P> where P: Publisher<Message = RpcInterfaceMessage> {}
-}
 
 mod server {
     use super::RpcInterface;
@@ -60,9 +45,7 @@ async fn test_rpc_macros() -> Result<()> {
     let mut rpc_server = server::RpcServer {
         subscriber: SubscriberImpl::new("rpc_server"),
     };
-    let mut rpc_client = client::RpcClient {
-        publisher: PublisherImpl::new("rpc_client", 1),
-    };
+    let mut rpc_client = interface::RpcInterfaceClient::new(PublisherImpl::new("rpc_client", 1));
 
     rpc_server.subscribe_to(&mut rpc_client)?;
 

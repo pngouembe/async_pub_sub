@@ -27,38 +27,75 @@ impl ::core::fmt::Debug for RpcInterfaceMessage {
         }
     }
 }
-pub trait RpcInterfaceClient: async_pub_sub::PublisherWrapper<RpcInterfaceMessage> {
-    fn add_one(&self, value: i32) -> impl std::future::Future<Output = i32> {
-        async move {
-            let (request, response) = async_pub_sub::Request::new(value);
-            self.publish(RpcInterfaceMessage::AddOne(request))
-                .await
-                .expect("failed to publish add_one request");
-            response.await.expect("failed to receive add_one response")
-        }
+pub struct RpcInterfaceClient {
+    #[publisher(RpcInterfaceMessage)]
+    pub publisher: Box<dyn async_pub_sub::Publisher<Message = RpcInterfaceMessage>>,
+}
+impl async_pub_sub::Publisher for RpcInterfaceClient {
+    type Message = RpcInterfaceMessage;
+    fn get_name(&self) -> &'static str {
+        async_pub_sub::Publisher::get_name(&self.publisher)
     }
-    fn prefix_with_bar(
+    fn publish(
         &self,
-        string: String,
-    ) -> impl std::future::Future<Output = String> {
-        async move {
-            let (request, response) = async_pub_sub::Request::new(string);
-            self.publish(RpcInterfaceMessage::PrefixWithBar(request))
-                .await
-                .expect("failed to publish prefix_with_bar request");
-            response.await.expect("failed to receive prefix_with_bar response")
-        }
+        message: Self::Message,
+    ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
+        async_pub_sub::Publisher::publish(&self.publisher, message)
+    }
+    fn get_message_stream(
+        &mut self,
+        subscriber_name: &'static str,
+    ) -> async_pub_sub::Result<
+        std::pin::Pin<
+            Box<
+                dyn async_pub_sub::futures::Stream<
+                    Item = Self::Message,
+                > + Send + Sync + 'static,
+            >,
+        >,
+    > {
+        async_pub_sub::Publisher::get_message_stream(
+            &mut self.publisher,
+            subscriber_name,
+        )
     }
 }
-impl<T> RpcInterface for T
-where
-    T: RpcInterfaceClient,
-{
-    async fn add_one(&self, value: i32) -> i32 {
-        <Self as RpcInterfaceClient>::add_one(self, value).await
+impl RpcInterfaceClient {
+    pub fn new<P>(publisher: P) -> Self
+    where
+        P: async_pub_sub::Publisher<Message = RpcInterfaceMessage> + 'static,
+    {
+        Self {
+            publisher: Box::new(publisher),
+        }
     }
-    async fn prefix_with_bar(&self, string: String) -> String {
-        <Self as RpcInterfaceClient>::prefix_with_bar(self, string).await
+    pub fn add_one(&self, value: i32) -> futures::future::BoxFuture<i32> {
+        let (request, response) = async_pub_sub::Request::new(value);
+        let publish_future = self
+            .publisher
+            .publish(RpcInterfaceMessage::AddOne(request));
+        {
+            use futures::FutureExt;
+            async move {
+                publish_future.await.expect("failed to publish add_one request");
+                response.await.expect("failed to receive add_one response")
+            }
+                .boxed()
+        }
+    }
+    pub fn prefix_with_bar(&self, string: String) -> futures::future::BoxFuture<String> {
+        let (request, response) = async_pub_sub::Request::new(string);
+        let publish_future = self
+            .publisher
+            .publish(RpcInterfaceMessage::PrefixWithBar(request));
+        {
+            use futures::FutureExt;
+            async move {
+                publish_future.await.expect("failed to publish prefix_with_bar request");
+                response.await.expect("failed to receive prefix_with_bar response")
+            }
+                .boxed()
+        }
     }
 }
 pub trait RpcInterfaceServer: async_pub_sub::SubscriberWrapper<

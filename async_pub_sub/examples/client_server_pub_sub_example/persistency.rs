@@ -1,10 +1,10 @@
-use async_pub_sub::{PublisherImpl, SubscriberImpl};
-use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
+use async_pub_sub::SubscriberImpl;
+use async_pub_sub_macros::{rpc_interface, DeriveSubscriber};
 
 const NAME: &str = "Persistency";
 
 // TODO: find a way to handle references or forbid their use
-#[rpc_interface]
+#[rpc_interface(Debug)]
 pub trait PersistencyInterface {
     async fn get_data(&self) -> Vec<u8>;
     async fn store_data(&mut self, data: Vec<u8>);
@@ -42,19 +42,3 @@ impl PersistencyInterface for PersistencyService {
         self.data = data
     }
 }
-
-#[derive(DerivePublisher)]
-pub struct PersistencyClient {
-    #[publisher(PersistencyInterfaceMessage)]
-    rpc_publisher: PublisherImpl<PersistencyInterfaceMessage>,
-}
-
-impl PersistencyClient {
-    pub fn new(name: &'static str, buffer_size: usize) -> Self {
-        Self {
-            rpc_publisher: PublisherImpl::new(name, buffer_size),
-        }
-    }
-}
-
-impl PersistencyInterfaceClient for PersistencyClient {}

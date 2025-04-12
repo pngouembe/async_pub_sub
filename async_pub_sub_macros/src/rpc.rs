@@ -33,7 +33,7 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
 
     let trait_name = input.ident.clone();
     let message_enum_name = format_ident!("{}Message", trait_name);
-    let client_trait_name = format_ident!("{}Client", trait_name);
+    let client_name = format_ident!("{}Client", trait_name);
     let server_trait_name = format_ident!("{}Server", trait_name);
 
     let methods: Vec<_> = input
@@ -50,8 +50,6 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
 
     let enum_variants = generate_enum_variants(&methods);
     let client_methods = generate_client_methods(&message_enum_name, &methods);
-    let trait_impl_for_client =
-        generate_trait_impl_for_client(&trait_name, &client_trait_name, &methods);
     let server_impl = generate_server_impl(&message_enum_name, &trait_name, &methods);
     let server_trait_impl =
         generate_server_trait_impl(&server_trait_name, &message_enum_name, &trait_name);
@@ -65,11 +63,24 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             #(#enum_variants)*
         }
 
-        pub trait #client_trait_name: async_pub_sub::PublisherWrapper<#message_enum_name> {
-            #(#client_methods)*
+        #[derive(async_pub_sub_macros::DerivePublisher)]
+        pub struct #client_name
+        {
+            #[publisher(#message_enum_name)]
+            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name>>,
         }
 
-        #trait_impl_for_client
+        impl #client_name
+        {
+            pub fn new<P>(publisher: P ) -> Self
+            where
+                P: async_pub_sub::Publisher<Message = #message_enum_name> + 'static,
+            {
+                Self { publisher: Box::new(publisher) }
+            }
+
+            #(#client_methods)*
+        }
 
         pub trait #server_trait_name: async_pub_sub::SubscriberWrapper<#message_enum_name> + #trait_name {
             async fn run(&mut self) {
@@ -145,7 +156,7 @@ fn generate_client_methods<'a>(
         };
 
         let function_signature =
-            quote! { #name(#args) -> impl std::future::Future<Output = #output_type> };
+            quote! { #name(#args) -> futures::future::BoxFuture<#output_type> };
 
         let request_content: Vec<_> = args
             .iter()
@@ -170,63 +181,23 @@ fn generate_client_methods<'a>(
         let response_failure_message = format!("failed to receive {} response", name);
 
         quote! {
-            fn #function_signature {
-                async move {
+            pub fn #function_signature {
                 let (request, response) = async_pub_sub::Request::new(#request_content);
-                self.publish(#message_enum_name::#variant_name(request))
-                    .await
-                    .expect(#publish_failure_message);
-                response.await.expect(#response_failure_message)
+                let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
+                {
+                    use futures::FutureExt;
+
+                    async move {
+                        publish_future
+                            .await
+                            .expect(#publish_failure_message);
+                        response.await.expect(#response_failure_message)
+                    }
+                    .boxed()
                 }
             }
         }
     })
-}
-
-fn generate_trait_impl_for_client(
-    trait_name: &syn::Ident,
-    client_trait_name: &syn::Ident,
-    methods: &[&syn::TraitItemFn],
-) -> proc_macro2::TokenStream {
-    let method_impls = methods.iter().map(|method| {
-        let name = &method.sig.ident;
-        let args = &method.sig.inputs;
-        let output = &method.sig.output;
-
-        // Extract argument names excluding &self
-        let arg_names: Vec<_> = args
-            .iter()
-            .skip(1)
-            .map(|arg| {
-                if let syn::FnArg::Typed(pat_type) = arg {
-                    if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                        &pat_ident.ident
-                    } else {
-                        panic!("Expected identifier pattern for argument")
-                    }
-                } else {
-                    panic!("Expected typed argument")
-                }
-            })
-            .collect();
-
-        let function_signature = quote! { #name(#args) #output };
-
-        quote! {
-            async fn #function_signature {
-                <Self as #client_trait_name>::#name(self, #(#arg_names),*).await
-            }
-        }
-    });
-
-    quote! {
-        impl<T> #trait_name for T
-        where
-            T: #client_trait_name,
-        {
-            #(#method_impls)*
-        }
-    }
 }
 
 fn generate_server_impl<'a>(

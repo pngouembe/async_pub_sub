@@ -2,7 +2,7 @@ use async_pub_sub::SubscriberImpl;
 use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber};
 
 use crate::{
-    cache::{CacheClient, CacheInterface, CacheInterfaceMessage},
+    cache::{CacheInterfaceClient, CacheInterfaceMessage},
     timer::DataProducerTimerNotification,
 };
 
@@ -12,16 +12,20 @@ const NAME: &str = "Producer";
 pub struct DataProducerService {
     counter: usize,
     #[publisher(CacheInterfaceMessage)]
-    cache_rpc_client: CacheClient,
+    cache_rpc_client: CacheInterfaceClient,
     #[subscriber(DataProducerTimerNotification)]
     timer_notification_subscriber: SubscriberImpl<DataProducerTimerNotification>,
 }
 
 impl DataProducerService {
     pub fn new() -> Self {
+        let cache_publisher = async_pub_sub::PublisherBuilder::new()
+            .layer(async_pub_sub::DebuggingPublisherLayer)
+            .publisher(async_pub_sub::PublisherImpl::new(NAME, 10));
+
         Self {
             counter: 0,
-            cache_rpc_client: CacheClient::new(NAME, 10),
+            cache_rpc_client: CacheInterfaceClient::new(cache_publisher),
             timer_notification_subscriber: SubscriberImpl::new(NAME),
         }
     }

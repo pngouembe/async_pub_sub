@@ -4,7 +4,7 @@ use async_pub_sub::{
 use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
 
 use crate::{
-    persistency::{PersistencyClient, PersistencyInterface, PersistencyInterfaceMessage},
+    persistency::{PersistencyInterfaceClient, PersistencyInterfaceMessage},
     timer::CacheTimerNotification,
 };
 
@@ -22,17 +22,21 @@ pub struct CacheService {
     #[subscriber(CacheInterfaceMessage)]
     rpc_subscriber: SubscriberImpl<CacheInterfaceMessage>,
     #[publisher(PersistencyInterfaceMessage)]
-    persistency_rpc_client: PersistencyClient,
+    persistency_rpc_client: PersistencyInterfaceClient,
     #[subscriber(CacheTimerNotification)]
     timer_notification_subscriber: SubscriberImpl<CacheTimerNotification>,
 }
 
 impl CacheService {
     pub fn new() -> Self {
+        let persistency_publisher = PublisherBuilder::new()
+            .layer(DebuggingPublisherLayer)
+            .publisher(PublisherImpl::new(NAME, 10));
+
         Self {
             data: None,
             rpc_subscriber: SubscriberImpl::new(NAME),
-            persistency_rpc_client: PersistencyClient::new(NAME, 10),
+            persistency_rpc_client: PersistencyInterfaceClient::new(persistency_publisher),
             timer_notification_subscriber: SubscriberImpl::new(NAME),
         }
     }
@@ -62,23 +66,3 @@ impl CacheInterface for CacheService {
         self.data = Some(data);
     }
 }
-
-#[derive(DerivePublisher)]
-pub struct CacheClient {
-    #[publisher(CacheInterfaceMessage)]
-    rpc_publisher: Box<dyn Publisher<Message = CacheInterfaceMessage>>,
-}
-
-impl CacheClient {
-    pub fn new(name: &'static str, buffer_size: usize) -> Self {
-        Self {
-            rpc_publisher: Box::new(
-                PublisherBuilder::new()
-                    .layer(DebuggingPublisherLayer)
-                    .publisher(PublisherImpl::new(name, buffer_size)),
-            ),
-        }
-    }
-}
-
-impl CacheInterfaceClient for CacheClient {}
