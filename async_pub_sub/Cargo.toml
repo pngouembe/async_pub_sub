@@ -1,6 +1,6 @@
 [package]
 name = "async_pub_sub"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license-file = "LICENSE"
 description = "A library aiming at making async pub-sub easier in Rust"
