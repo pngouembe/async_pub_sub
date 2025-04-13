@@ -113,7 +113,7 @@ dependencies = [
 
 [[package]]
 name = "async_pub_sub_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async_pub_sub",
  "futures",

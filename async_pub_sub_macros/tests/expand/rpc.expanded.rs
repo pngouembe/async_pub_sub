@@ -17,7 +17,9 @@ pub enum RpcInterfaceMessage {
 }
 pub struct RpcInterfaceClient {
     #[publisher(RpcInterfaceMessage)]
-    pub publisher: Box<dyn async_pub_sub::Publisher<Message = RpcInterfaceMessage>>,
+    pub publisher: Box<
+        dyn async_pub_sub::Publisher<Message = RpcInterfaceMessage> + Send,
+    >,
 }
 impl async_pub_sub::Publisher for RpcInterfaceClient {
     type Message = RpcInterfaceMessage;
@@ -51,7 +53,7 @@ impl async_pub_sub::Publisher for RpcInterfaceClient {
 impl RpcInterfaceClient {
     pub fn new<P>(publisher: P) -> Self
     where
-        P: async_pub_sub::Publisher<Message = RpcInterfaceMessage> + 'static,
+        P: async_pub_sub::Publisher<Message = RpcInterfaceMessage> + Send + 'static,
     {
         Self {
             publisher: Box::new(publisher),
@@ -59,13 +61,13 @@ impl RpcInterfaceClient {
     }
 }
 impl RpcInterface for RpcInterfaceClient {
-    fn add_one(&self, value: i32) -> futures::future::BoxFuture<i32> {
+    fn add_one(&self, value: i32) -> async_pub_sub::futures::future::BoxFuture<i32> {
         let (request, response) = async_pub_sub::Request::new(value);
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::AddOne(request));
         {
-            use futures::FutureExt;
+            use async_pub_sub::futures::FutureExt;
             async move {
                 publish_future.await.expect("failed to publish add_one request");
                 response.await.expect("failed to receive add_one response")
@@ -73,11 +75,15 @@ impl RpcInterface for RpcInterfaceClient {
                 .boxed()
         }
     }
-    fn add(&self, left: i32, right: i32) -> futures::future::BoxFuture<i32> {
+    fn add(
+        &self,
+        left: i32,
+        right: i32,
+    ) -> async_pub_sub::futures::future::BoxFuture<i32> {
         let (request, response) = async_pub_sub::Request::new((left, right));
         let publish_future = self.publisher.publish(RpcInterfaceMessage::Add(request));
         {
-            use futures::FutureExt;
+            use async_pub_sub::futures::FutureExt;
             async move {
                 publish_future.await.expect("failed to publish add request");
                 response.await.expect("failed to receive add response")
@@ -85,13 +91,16 @@ impl RpcInterface for RpcInterfaceClient {
                 .boxed()
         }
     }
-    fn prefix_with_bar(&self, string: String) -> futures::future::BoxFuture<String> {
+    fn prefix_with_bar(
+        &self,
+        string: String,
+    ) -> async_pub_sub::futures::future::BoxFuture<String> {
         let (request, response) = async_pub_sub::Request::new(string);
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::PrefixWithBar(request));
         {
-            use futures::FutureExt;
+            use async_pub_sub::futures::FutureExt;
             async move {
                 publish_future.await.expect("failed to publish prefix_with_bar request");
                 response.await.expect("failed to receive prefix_with_bar response")
@@ -99,13 +108,13 @@ impl RpcInterface for RpcInterfaceClient {
                 .boxed()
         }
     }
-    fn get_toto(&self) -> futures::future::BoxFuture<String> {
+    fn get_toto(&self) -> async_pub_sub::futures::future::BoxFuture<String> {
         let (request, response) = async_pub_sub::Request::new(());
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::GetToto(request));
         {
-            use futures::FutureExt;
+            use async_pub_sub::futures::FutureExt;
             async move {
                 publish_future.await.expect("failed to publish get_toto request");
                 response.await.expect("failed to receive get_toto response")
@@ -113,13 +122,16 @@ impl RpcInterface for RpcInterfaceClient {
                 .boxed()
         }
     }
-    fn set_tata(&mut self, tata: String) -> futures::future::BoxFuture<()> {
+    fn set_tata(
+        &mut self,
+        tata: String,
+    ) -> async_pub_sub::futures::future::BoxFuture<()> {
         let (request, response) = async_pub_sub::Request::new(tata);
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::SetTata(request));
         {
-            use futures::FutureExt;
+            use async_pub_sub::futures::FutureExt;
             async move {
                 publish_future.await.expect("failed to publish set_tata request");
                 response.await.expect("failed to receive set_tata response")

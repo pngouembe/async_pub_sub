@@ -1,5 +1,5 @@
 use crate::{PublisherWrapper, Result, Subscriber};
-use futures::{stream::SelectAll, Stream, StreamExt};
+use futures::{Stream, StreamExt, stream::SelectAll};
 use std::{future::Future, pin::Pin};
 
 /// A concrete implementation of the Subscriber trait that can receive messages from multiple publishers.
@@ -50,6 +50,7 @@ where
     /// # Returns
     /// The next message in the combined message stream
     pub async fn receive(&mut self) -> Message {
+        // TODO: this can panic, find a way to avoid it
         self.messages.select_next_some().await
     }
 }

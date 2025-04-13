@@ -2,10 +2,10 @@ use heck::ToUpperCamelCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
+    Ident, Item, Token,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Ident, Item, Token,
 };
 
 struct AttributeArgs {
@@ -63,18 +63,18 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             #(#enum_variants)*
         }
 
-        #[derive(async_pub_sub_macros::DerivePublisher)]
+        #[derive(async_pub_sub::macros::DerivePublisher)]
         pub struct #client_name
         {
             #[publisher(#message_enum_name)]
-            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name>>,
+            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name> + Send>,
         }
 
         impl #client_name
         {
             pub fn new<P>(publisher: P ) -> Self
             where
-                P: async_pub_sub::Publisher<Message = #message_enum_name> + 'static,
+                P: async_pub_sub::Publisher<Message = #message_enum_name> + Send + 'static,
             {
                 Self { publisher: Box::new(publisher) }
             }
@@ -158,7 +158,7 @@ fn generate_client_methods<'a>(
         };
 
         let function_signature =
-            quote! { #name(#args) -> futures::future::BoxFuture<#output_type> };
+            quote! { #name(#args) -> async_pub_sub::futures::future::BoxFuture<#output_type> };
 
         let request_content: Vec<_> = args
             .iter()
@@ -187,7 +187,7 @@ fn generate_client_methods<'a>(
                 let (request, response) = async_pub_sub::Request::new(#request_content);
                 let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
                 {
-                    use futures::FutureExt;
+                    use async_pub_sub::futures::FutureExt;
 
                     async move {
                         publish_future
