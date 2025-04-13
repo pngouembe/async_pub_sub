@@ -78,7 +78,9 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             {
                 Self { publisher: Box::new(publisher) }
             }
+        }
 
+        impl #trait_name for #client_name {
             #(#client_methods)*
         }
 
@@ -181,7 +183,7 @@ fn generate_client_methods<'a>(
         let response_failure_message = format!("failed to receive {} response", name);
 
         quote! {
-            pub fn #function_signature {
+            fn #function_signature {
                 let (request, response) = async_pub_sub::Request::new(#request_content);
                 let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
                 {

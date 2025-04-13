@@ -4,7 +4,7 @@ use async_pub_sub::{
 use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
 
 use crate::{
-    persistency::{PersistencyInterfaceClient, PersistencyInterfaceMessage},
+    persistency::{PersistencyInterface, PersistencyInterfaceClient, PersistencyInterfaceMessage},
     timer::CacheTimerNotification,
 };
 

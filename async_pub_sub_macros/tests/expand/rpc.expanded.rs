@@ -57,7 +57,9 @@ impl RpcInterfaceClient {
             publisher: Box::new(publisher),
         }
     }
-    pub fn add_one(&self, value: i32) -> futures::future::BoxFuture<i32> {
+}
+impl RpcInterface for RpcInterfaceClient {
+    fn add_one(&self, value: i32) -> futures::future::BoxFuture<i32> {
         let (request, response) = async_pub_sub::Request::new(value);
         let publish_future = self
             .publisher
@@ -71,7 +73,7 @@ impl RpcInterfaceClient {
                 .boxed()
         }
     }
-    pub fn add(&self, left: i32, right: i32) -> futures::future::BoxFuture<i32> {
+    fn add(&self, left: i32, right: i32) -> futures::future::BoxFuture<i32> {
         let (request, response) = async_pub_sub::Request::new((left, right));
         let publish_future = self.publisher.publish(RpcInterfaceMessage::Add(request));
         {
@@ -83,7 +85,7 @@ impl RpcInterfaceClient {
                 .boxed()
         }
     }
-    pub fn prefix_with_bar(&self, string: String) -> futures::future::BoxFuture<String> {
+    fn prefix_with_bar(&self, string: String) -> futures::future::BoxFuture<String> {
         let (request, response) = async_pub_sub::Request::new(string);
         let publish_future = self
             .publisher
@@ -97,7 +99,7 @@ impl RpcInterfaceClient {
                 .boxed()
         }
     }
-    pub fn get_toto(&self) -> futures::future::BoxFuture<String> {
+    fn get_toto(&self) -> futures::future::BoxFuture<String> {
         let (request, response) = async_pub_sub::Request::new(());
         let publish_future = self
             .publisher
@@ -111,7 +113,7 @@ impl RpcInterfaceClient {
                 .boxed()
         }
     }
-    pub fn set_tata(&mut self, tata: String) -> futures::future::BoxFuture<()> {
+    fn set_tata(&mut self, tata: String) -> futures::future::BoxFuture<()> {
         let (request, response) = async_pub_sub::Request::new(tata);
         let publish_future = self
             .publisher

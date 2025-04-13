@@ -2,7 +2,7 @@ use async_pub_sub::SubscriberImpl;
 use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber};
 
 use crate::{
-    cache::{CacheInterfaceClient, CacheInterfaceMessage},
+    cache::{CacheInterface, CacheInterfaceClient, CacheInterfaceMessage},
     timer::DataProducerTimerNotification,
 };
 
