@@ -1,7 +1,12 @@
 [package]
 name = "async_pub_sub_macros"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+license-file = "LICENSE"
+description = "A library containing macros used by the async_pub_sub library to make async pub-sub easier in Rust"
+repository = "https://github.com/pngouembe/async_pub_sub/tree/main/async_pub_sub_macros"
+readme = "README.md"
+keywords = ["async", "pub-sub", "macros"]
 
 [lib]
 proc-macro = true

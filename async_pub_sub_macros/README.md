@@ -65,4 +65,4 @@ See the [tests/expand](tests/expand/) directory for more detailed usage examples
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
