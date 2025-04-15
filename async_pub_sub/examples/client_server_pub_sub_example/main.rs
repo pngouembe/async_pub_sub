@@ -4,17 +4,23 @@ mod data_producer;
 mod persistency;
 mod timer;
 
+use async_pub_sub::Result;
+use async_pub_sub_macros::routes;
 use cache::CacheService;
 use data_consumer::DataConsumerService;
 use data_producer::DataProducerService;
 use persistency::PersistencyService;
+use simplelog::Config;
 use timer::{CacheTimerNotification, TimerService};
-use async_pub_sub::Result;
-use async_pub_sub_macros::routes;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::builder().format_target(false).init();
+    simplelog::TermLogger::init(
+        log::LevelFilter::Debug,
+        Config::default(),
+        simplelog::TerminalMode::Stdout,
+        simplelog::ColorChoice::Auto,
+    )?;
 
     log::info!("Starting Main");
     let mut timer_service = TimerService::new();
