@@ -1,6 +1,6 @@
-use crate::{PublisherWrapper, Result, Subscriber};
-use futures::{Stream, StreamExt, stream::SelectAll};
-use std::{future::Future, pin::Pin};
+use crate::{Publisher, Result, Subscriber};
+use futures::{FutureExt, Stream, StreamExt, future::BoxFuture, stream::SelectAll};
+use std::pin::Pin;
 
 /// A concrete implementation of the Subscriber trait that can receive messages from multiple publishers.
 ///
@@ -39,7 +39,7 @@ where
     ///
     /// # Returns
     /// A Result indicating success or failure of the subscription
-    pub fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Message>) -> Result<()> {
+    pub fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
         self.messages.push(stream);
         Ok(())
@@ -69,11 +69,14 @@ where
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut dyn Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         SubscriberImpl::subscribe_to(self, publisher)
     }
 
-    fn receive(&mut self) -> impl Future<Output = Message> {
-        SubscriberImpl::receive(self)
+    fn receive(&mut self) -> BoxFuture<Message> {
+        SubscriberImpl::receive(self).boxed()
     }
 }

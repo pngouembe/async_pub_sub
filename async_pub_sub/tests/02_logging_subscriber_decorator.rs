@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
-use async_pub_sub::{PublisherImpl, PublisherWrapper, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use futures::{FutureExt, future::BoxFuture};
 
 struct LoggingSubscriber<S> {
     publisher_name: Option<&'static str>,
@@ -25,18 +26,15 @@ where
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
+        let publisher_name = Publisher::get_name(publisher);
         self.subscriber.subscribe_to(publisher)?;
-        self.publisher_name = Some(publisher.get_name());
-        log::info!(
-            "({}) <-> ({})",
-            self.subscriber.get_name(),
-            publisher.get_name(),
-        );
+        self.publisher_name = Some(publisher_name);
+        log::info!("({}) <-> ({})", self.subscriber.get_name(), publisher_name,);
         Ok(())
     }
 
-    fn receive(&mut self) -> impl std::future::Future<Output = Message> {
+    fn receive(&mut self) -> BoxFuture<Message> {
         let publisher_name = self.publisher_name.expect("publisher name should be known");
         async move {
             let message = self.subscriber.receive().await;
@@ -48,6 +46,7 @@ where
             );
             message
         }
+        .boxed()
     }
 }
 

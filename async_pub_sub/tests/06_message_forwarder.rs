@@ -2,8 +2,9 @@ use std::{fmt::Display, pin::Pin};
 
 use async_pub_sub::{Publisher, PublisherImpl, Request, Result, Subscriber, SubscriberImpl};
 use futures::{
-    stream::{self, SelectAll},
     FutureExt, Stream, StreamExt,
+    future::BoxFuture,
+    stream::{self, SelectAll},
 };
 
 // TODO: fix the request response logging in the forwarder
@@ -37,10 +38,7 @@ where
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
         let stream = publisher.get_message_stream(self.name)?;
 
         self.messages.as_mut().unwrap().push(stream);
@@ -48,7 +46,7 @@ where
         Ok(())
     }
 
-    async fn receive(&mut self) -> Message {
+    fn receive(&mut self) -> BoxFuture<Message> {
         panic!("LoggingForwarder does not implement receive method")
     }
 }

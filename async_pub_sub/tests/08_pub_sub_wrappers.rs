@@ -2,8 +2,8 @@
 
 use std::pin::Pin;
 
-use async_pub_sub::{PublisherWrapper, Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
-use futures::Stream;
+use async_pub_sub::{Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use futures::{FutureExt, Stream, future::BoxFuture};
 
 struct Service {
     subscriber: SubscriberImpl<i32>,
@@ -36,12 +36,15 @@ impl Subscriber for Service {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut dyn Publisher<Message = Self::Message>,
+    ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> impl std::future::Future<Output = i32> {
-        self.subscriber.receive()
+    fn receive(&mut self) -> BoxFuture<Self::Message> {
+        self.subscriber.receive().boxed()
     }
 }
 

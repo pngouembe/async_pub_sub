@@ -1,7 +1,7 @@
+use futures::{FutureExt, future::BoxFuture};
 use std::fmt::Display;
-use futures::Future;
 
-use crate::{utils::Layer, PublisherWrapper, Result, Subscriber};
+use crate::{Publisher, Result, Subscriber, utils::Layer};
 
 /// A subscriber middleware layer that adds logging capabilities.
 /// This layer will log all messages that are received by the subscriber.
@@ -46,29 +46,26 @@ where
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
-        self.publisher_name = Some(publisher.get_name());
-        log::info!(
-            "({}) <-> ({})",
-            self.subscriber.get_name(),
-            publisher.get_name(),
-        );
+    fn subscribe_to(
+        &mut self,
+        publisher: &mut dyn Publisher<Message = Self::Message>,
+    ) -> Result<()> {
+        let publisher_name = Publisher::get_name(publisher);
+
+        self.publisher_name = Some(publisher_name);
+        log::info!("({}) <-> ({})", self.subscriber.get_name(), publisher_name,);
         self.subscriber.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> impl Future<Output = Self::Message> + Send {
+    fn receive(&mut self) -> BoxFuture<Self::Message> {
         let publisher_name = self.publisher_name.expect("publisher name should be known");
         let subscriber_name = self.subscriber.get_name();
-        
+
         async move {
             let message = self.subscriber.receive().await;
-            log::info!(
-                "[{}] <- [{}]: {}",
-                subscriber_name,
-                publisher_name,
-                message
-            );
+            log::info!("[{}] <- [{}]: {}", subscriber_name, publisher_name, message);
             message
         }
+        .boxed()
     }
 }

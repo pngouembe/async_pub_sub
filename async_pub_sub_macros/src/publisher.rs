@@ -164,11 +164,11 @@ impl PublisherField {
         quote! {
             impl #impl_generics async_pub_sub::PublisherWrapper<#message_type>
             for #struct_name #ty_generics #where_clause {
-                fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = #message_type> {
+                fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = #message_type> {
                     &self.#field_name
                 }
 
-                fn get_publisher_mut(&mut self) -> &mut impl async_pub_sub::Publisher<Message = #message_type> {
+                fn get_publisher_mut(&mut self) -> &mut dyn async_pub_sub::Publisher<Message = #message_type> {
                     &mut self.#field_name
                 }
             }
@@ -186,14 +186,14 @@ fn find_all_publishers(input: &DeriveInput) -> Result<Vec<PublisherField>, syn::
                 return Err(syn::Error::new_spanned(
                     input,
                     "DerivePublisher macro only supports structs with named fields",
-                ))
+                ));
             }
         },
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
                 "DerivePublisher macro only supports structs",
-            ))
+            ));
         }
     };
 
