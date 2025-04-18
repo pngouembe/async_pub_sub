@@ -1,7 +1,7 @@
 use std::{fmt::Display, pin::Pin};
 
-use crate::{Publisher, PublisherWrapper, Result, Subscriber, SubscriberImpl};
-use futures::{stream, FutureExt, Stream};
+use crate::{Publisher, Result, Subscriber, SubscriberImpl};
+use futures::{FutureExt, Stream, future::BoxFuture, stream};
 
 // TODO: create logging forwarder using a middleware pattern
 // TODO: Add the possibility to publisher from the forwarder using a middleware pattern
@@ -60,7 +60,7 @@ where
     ///
     /// # Returns
     /// * `Result<()>` - Ok if subscription successful, Err with description if failed
-    fn subscribe_to(&mut self, publisher: &mut impl PublisherWrapper<Self::Message>) -> Result<()> {
+    fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
         let Some(subscriber) = self.subscriber.as_mut() else {
             let subscriber_name = self
                 .subscriber_name
@@ -80,7 +80,7 @@ where
     }
 
     /// Not implemented for LoggingForwarder. Will panic if called.
-    async fn receive(&mut self) -> Message {
+    fn receive(&mut self) -> BoxFuture<Message> {
         panic!("LoggingForwarder does not implement receive method")
     }
 }

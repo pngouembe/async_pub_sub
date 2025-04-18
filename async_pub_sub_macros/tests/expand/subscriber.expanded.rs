@@ -11,11 +11,11 @@ impl<A: Subscriber> async_pub_sub::Subscriber for TestSubscriberA<A> {
     }
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
+        publisher: &mut dyn async_pub_sub::Publisher<Message = Self::Message>,
     ) -> async_pub_sub::Result<()> {
         async_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_a, publisher)
     }
-    fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
+    fn receive(&mut self) -> async_pub_sub::futures::future::BoxFuture<Self::Message> {
         async_pub_sub::Subscriber::receive(&mut self.subscriber_a)
     }
 }
@@ -35,11 +35,11 @@ where
     }
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
+        publisher: &mut dyn async_pub_sub::Publisher<Message = Self::Message>,
     ) -> async_pub_sub::Result<()> {
         async_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_b, publisher)
     }
-    fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
+    fn receive(&mut self) -> async_pub_sub::futures::future::BoxFuture<Self::Message> {
         async_pub_sub::Subscriber::receive(&mut self.subscriber_b)
     }
 }

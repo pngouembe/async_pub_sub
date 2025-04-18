@@ -13,12 +13,10 @@ where
     PubA: Publisher<Message = i32>,
     PubB: Publisher<Message = String>,
 {
-    fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = i32> {
+    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = i32> {
         &self.publisher_a
     }
-    fn get_publisher_mut(
-        &mut self,
-    ) -> &mut impl async_pub_sub::Publisher<Message = i32> {
+    fn get_publisher_mut(&mut self) -> &mut dyn async_pub_sub::Publisher<Message = i32> {
         &mut self.publisher_a
     }
 }
@@ -27,12 +25,12 @@ where
     PubA: Publisher<Message = i32>,
     PubB: Publisher<Message = String>,
 {
-    fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = String> {
+    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = String> {
         &self.publisher_b
     }
     fn get_publisher_mut(
         &mut self,
-    ) -> &mut impl async_pub_sub::Publisher<Message = String> {
+    ) -> &mut dyn async_pub_sub::Publisher<Message = String> {
         &mut self.publisher_b
     }
 }
@@ -44,12 +42,10 @@ impl<
     A: Publisher<Message = i32>,
     B: Publisher<Message = String>,
 > async_pub_sub::PublisherWrapper<i32> for MultiPublisher<A, B> {
-    fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = i32> {
+    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = i32> {
         &self.publisher_a
     }
-    fn get_publisher_mut(
-        &mut self,
-    ) -> &mut impl async_pub_sub::Publisher<Message = i32> {
+    fn get_publisher_mut(&mut self) -> &mut dyn async_pub_sub::Publisher<Message = i32> {
         &mut self.publisher_a
     }
 }
@@ -57,12 +53,12 @@ impl<
     A: Publisher<Message = i32>,
     B: Publisher<Message = String>,
 > async_pub_sub::PublisherWrapper<String> for MultiPublisher<A, B> {
-    fn get_publisher(&self) -> &impl async_pub_sub::Publisher<Message = String> {
+    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = String> {
         &self.publisher_b
     }
     fn get_publisher_mut(
         &mut self,
-    ) -> &mut impl async_pub_sub::Publisher<Message = String> {
+    ) -> &mut dyn async_pub_sub::Publisher<Message = String> {
         &mut self.publisher_b
     }
 }

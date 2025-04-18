@@ -144,11 +144,11 @@ impl SubscriberField {
                     async_pub_sub::Subscriber::get_name(&self.#field_name)
                 }
 
-                fn subscribe_to(&mut self, publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>) -> async_pub_sub::Result<()> {
+                fn subscribe_to(&mut self, publisher: &mut dyn async_pub_sub::Publisher<Message = Self::Message>) -> async_pub_sub::Result<()> {
                     async_pub_sub::Subscriber::subscribe_to(&mut self.#field_name, publisher)
                 }
 
-                fn receive(&mut self) -> impl std::future::Future<Output = Self::Message> {
+                fn receive(&mut self) -> async_pub_sub::futures::future::BoxFuture<Self::Message> {
                     async_pub_sub::Subscriber::receive(&mut self.#field_name)
                 }
             }
@@ -186,14 +186,14 @@ fn find_all_subscribers(input: &DeriveInput) -> Result<Vec<SubscriberField>, syn
                 return Err(syn::Error::new_spanned(
                     input,
                     "DeriveSubscriber macro only supports structs with named fields",
-                ))
+                ));
             }
         },
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
                 "DeriveSubscriber macro only supports structs",
-            ))
+            ));
         }
     };
 

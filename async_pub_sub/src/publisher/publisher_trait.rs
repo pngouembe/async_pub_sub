@@ -1,6 +1,6 @@
 use std::pin::Pin;
-
-use futures::{future::BoxFuture, Stream};
+use std::ops::{Deref, DerefMut};
+use futures::{Stream, future::BoxFuture};
 
 use crate::Result;
 
@@ -40,26 +40,27 @@ pub trait Publisher {
     ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>>;
 }
 
-impl<T> Publisher for T
-where
-    T: std::ops::Deref + std::ops::DerefMut,
+// Add blanket implementation for types that can be dereferenced into a Publisher
+impl<T> Publisher for T 
+where 
+    T: Deref + DerefMut,
     T::Target: Publisher,
 {
     type Message = <T::Target as Publisher>::Message;
 
     fn get_name(&self) -> &'static str {
-        (**self).get_name()
+        self.deref().get_name()
     }
 
     fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
-        (**self).publish(message)
+        self.deref().publish(message)
     }
 
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
     ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
-        (**self).get_message_stream(subscriber_name)
+        self.deref_mut().get_message_stream(subscriber_name)
     }
 }
 
@@ -75,13 +76,13 @@ where
     ///
     /// # Returns
     /// A reference to the wrapped publisher implementation.
-    fn get_publisher(&self) -> &impl Publisher<Message = Message>;
+    fn get_publisher(&self) -> &dyn Publisher<Message = Message>;
 
     /// Gets a mutable reference to the wrapped publisher.
     ///
     /// # Returns
     /// A mutable reference to the wrapped publisher implementation.
-    fn get_publisher_mut(&mut self) -> &mut impl Publisher<Message = Message>;
+    fn get_publisher_mut(&mut self) -> &mut dyn Publisher<Message = Message>;
 
     /// Returns the name of the wrapped publisher.
     ///
@@ -122,11 +123,11 @@ impl<T> PublisherWrapper<T::Message> for T
 where
     T: Publisher,
 {
-    fn get_publisher(&self) -> &impl Publisher<Message = T::Message> {
+    fn get_publisher(&self) -> &dyn Publisher<Message = T::Message> {
         self
     }
 
-    fn get_publisher_mut(&mut self) -> &mut impl Publisher<Message = T::Message> {
+    fn get_publisher_mut(&mut self) -> &mut dyn Publisher<Message = T::Message> {
         self
     }
 }

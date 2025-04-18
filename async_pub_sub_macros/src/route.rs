@@ -1,18 +1,20 @@
 use proc_macro::TokenStream;
+use proc_macro2::TokenTree;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{Token, Type};
 
 pub struct RouteInput {
-    subscriber: syn::Ident,
-    publisher: syn::Ident,
+    subscriber: syn::Expr,
+    publisher: proc_macro2::TokenStream,
     message_type: Option<Type>,
 }
 
 impl Parse for RouteInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let publisher = input.parse()?;
-        input.parse::<Token![ -> ]>()?;
+        let publisher = parse_publisher_token_stream(input)?;
+        input.parse::<Token![->]>()?;
+
         let subscriber = input.parse()?;
 
         let message_type = if input.peek(Token![:]) {
@@ -30,20 +32,56 @@ impl Parse for RouteInput {
     }
 }
 
+fn parse_publisher_token_stream(input: ParseStream) -> syn::Result<proc_macro2::TokenStream> {
+    let publisher_start = input.cursor();
+
+    input.step(|cursor| {
+        let mut rest = *cursor;
+        while let Some((tt, next)) = rest.token_tree() {
+            if let TokenTree::Punct(punct) = &tt {
+                if punct.as_char() == '-' {
+                    if let Some((TokenTree::Punct(punct), _)) = next.token_tree() {
+                        if punct.as_char() == '>' {
+                            return Ok(((), rest));
+                        }
+                    }
+                }
+            }
+            rest = next;
+        }
+        Err(cursor.error("Expected '->'"))
+    })?;
+
+    let publisher_end = input.cursor();
+
+    let mut cursor = publisher_start;
+    let mut publisher = proc_macro2::TokenStream::new();
+    while cursor < publisher_end {
+        let (token, next) = cursor.token_tree().unwrap();
+        publisher.extend(std::iter::once(token));
+        cursor = next;
+    }
+
+    Ok(publisher)
+}
+
 pub(crate) fn generate_route(input: RouteInput) -> TokenStream {
     let subscriber = input.subscriber;
     let publisher = input.publisher;
 
     let output = if let Some(message_type) = input.message_type {
         quote! {
-            async_pub_sub::SubscriberWrapper::<#message_type>::subscribe_to(&mut #subscriber, &mut #publisher)
+            async_pub_sub::SubscriberWrapper::<#message_type>::subscribe_to(
+                &mut #subscriber,
+                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut #publisher),
+            )
         }
     } else {
         quote! {
-            {
-                use async_pub_sub::SubscriberWrapper;
-                #subscriber.subscribe_to(&mut #publisher)
-            }
+            async_pub_sub::SubscriberWrapper::<_>::subscribe_to(
+                &mut #subscriber,
+                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut #publisher),
+            )
         }
     };
 

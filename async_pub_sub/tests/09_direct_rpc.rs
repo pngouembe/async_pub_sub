@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use async_pub_sub::{PublisherImpl, Request, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{Publisher, PublisherImpl, Request, Result, Subscriber, SubscriberImpl};
+use futures::{FutureExt, future::BoxFuture};
 
 #[derive(Debug, PartialEq)]
 struct Foo(i32);
@@ -96,13 +97,13 @@ impl Subscriber for Service {
 
     fn subscribe_to(
         &mut self,
-        publisher: &mut impl async_pub_sub::PublisherWrapper<Self::Message>,
+        publisher: &mut dyn Publisher<Message = Self::Message>,
     ) -> Result<()> {
         self.subscriber.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> impl std::future::Future<Output = ServiceRequest> {
-        self.subscriber.receive()
+    fn receive(&mut self) -> BoxFuture<Self::Message> {
+        self.subscriber.receive().boxed()
     }
 }
 
