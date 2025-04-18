@@ -1,0 +1,37 @@
+name: Semver Check and Publish
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check semver for async_pub_sub
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+            package: async_pub_sub
+
+      - name: Publish async_pub_sub_macros crate
+        if: success()
+        env: 
+            CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+        run: cargo publish --token $CRATES_IO_TOKEN -p async_pub_sub_macros
+
+      - name: Publish async_pub_sub crate
+        if: success()
+        env: 
+            CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+        run: cargo publish --token $CRATES_IO_TOKEN -p async_pub_sub
