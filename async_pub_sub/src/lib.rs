@@ -17,7 +17,7 @@ pub use subscriber::{
     DebuggingSubscriberLayer, LoggingSubscriberLayer, Subscriber, SubscriberBuilder,
     SubscriberImpl, SubscriberWrapper,
 };
-pub use utils::{Layer, LoggingForwarder};
+pub use utils::{DebuggingForwarderLayer, Forwarder, ForwarderBuilder, ForwarderImpl, Layer};
 
 // Re-export futures for use in macros and client code
 pub use futures;

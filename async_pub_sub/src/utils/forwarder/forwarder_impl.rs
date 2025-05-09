@@ -1,10 +1,9 @@
-use std::{fmt::Display, pin::Pin};
+use std::pin::Pin;
 
 use crate::{Publisher, Result, Subscriber, SubscriberImpl};
 use futures::{FutureExt, Stream, future::BoxFuture, stream};
 
-// TODO: create logging forwarder using a middleware pattern
-// TODO: Add the possibility to publisher from the forwarder using a middleware pattern
+use super::Forwarder;
 
 /// A middleware component that logs messages as they pass between a publisher and subscriber.
 ///
@@ -12,10 +11,10 @@ use futures::{FutureExt, Stream, future::BoxFuture, stream};
 /// It logs each message that passes through it, providing visibility into the message flow.
 ///
 /// # Type Parameters
-/// * `Message` - The type of message being forwarded. Must implement `Display` and be `Send`.
-pub struct LoggingForwarder<Message>
+/// * `Message` - The type of message being forwarded. Must be `Send`.
+pub struct ForwarderImpl<Message>
 where
-    Message: Display + Send + 'static,
+    Message: Send + 'static,
 {
     /// The name identifier for this forwarder instance
     name: &'static str,
@@ -25,9 +24,9 @@ where
     subscriber: Option<SubscriberImpl<Message>>,
 }
 
-impl<Message> LoggingForwarder<Message>
+impl<Message> ForwarderImpl<Message>
 where
-    Message: Display + Send + 'static,
+    Message: Send + 'static,
 {
     /// Creates a new LoggingForwarder with the specified name.
     ///
@@ -42,9 +41,9 @@ where
     }
 }
 
-impl<Message> Subscriber for LoggingForwarder<Message>
+impl<Message> Subscriber for ForwarderImpl<Message>
 where
-    Message: Display + Send + 'static,
+    Message: Send + 'static,
 {
     type Message = Message;
 
@@ -85,9 +84,9 @@ where
     }
 }
 
-impl<Message> Publisher for LoggingForwarder<Message>
+impl<Message> Publisher for ForwarderImpl<Message>
 where
-    Message: Display + Send + Sync + 'static,
+    Message: Send + 'static,
 {
     type Message = Message;
 
@@ -124,23 +123,16 @@ where
         };
         self.subscriber_name = Some(subscriber_name);
 
-        let name = self.name;
         let stream = Box::pin(stream::unfold(
             subscriber,
             move |mut subscriber| async move {
                 let message = subscriber.receive().await;
-                log::info!("[{}] -> [{}]: {}", name, subscriber_name, message);
                 Some((message, subscriber))
             },
         ));
 
-        log::info!(
-            "({}) <-> ({}): {}",
-            self.name,
-            subscriber_name,
-            std::any::type_name::<Message>()
-        );
-
         Ok(stream)
     }
 }
+
+impl<Message> Forwarder for ForwarderImpl<Message> where Message: Send + 'static {}
