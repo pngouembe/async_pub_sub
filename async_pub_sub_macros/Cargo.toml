@@ -23,6 +23,6 @@ macrotest = "1.1.0"
 trybuild = "1.0"
 tokio-test = "0.4"
 tokio = { version = "1.0", features = ["full"] }
-async_pub_sub = { version = "0.1.0", path = "../async_pub_sub", features = [
+async_pub_sub = { version = "0.2.0", path = "../async_pub_sub", features = [
     "macros",
 ] }
