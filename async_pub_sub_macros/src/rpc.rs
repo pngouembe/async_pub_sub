@@ -21,22 +21,30 @@ impl Parse for AttributeArgs {
 }
 
 pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStream {
-    let attrs = parse_macro_input!(attr as AttributeArgs);
+   let attrs = parse_macro_input!(attr as AttributeArgs);
 
-    let input = match input {
-        Item::Trait(input) => input,
-        _ => panic!("The rpc_interface macro can only be used on trait definitions"),
+    let input_trait = match input.clone() {
+        // Clone item for potential error reporting span
+        Item::Trait(it) => it,
+        _ => {
+            return syn::Error::new_spanned(
+                input, // Span the whole item passed to the macro
+                "The rpc_interface macro can only be used on trait definitions",
+            )
+            .to_compile_error()
+            .into();
+        }
     };
 
     // Extract derives from parsed attributes and convert to iterator
     let derives = attrs.derives.iter();
 
-    let trait_name = input.ident.clone();
+    let trait_name = input_trait.ident.clone();
     let message_enum_name = format_ident!("{}Message", trait_name);
     let client_name = format_ident!("{}Client", trait_name);
     let server_trait_name = format_ident!("{}Server", trait_name);
 
-    let methods: Vec<_> = input
+    let methods: Vec<_> = input_trait
         .items
         .iter()
         .filter_map(|item| {
@@ -47,6 +55,10 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             }
         })
         .collect();
+
+    if let Err(e) = validate_method_signatures(&methods) {
+        return e.to_compile_error().into();
+    }
 
     let enum_variants = generate_enum_variants(&methods);
     let client_methods = generate_client_methods(&message_enum_name, &methods);
@@ -105,6 +117,46 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
     expanded.into()
 }
 
+fn validate_method_signatures(methods: &[&syn::TraitItemFn]) -> syn::Result<()> {
+    // Validate method signatures for references
+    for method in methods {
+        let method_name = &method.sig.ident;
+
+        // Check inputs for references
+        for arg in &method.sig.inputs {
+            if let syn::FnArg::Typed(pat_type) = arg {
+                if let syn::Type::Reference(ty) = &*pat_type.ty {
+                    let arg_name = &pat_type.pat;
+                    return Err(syn::Error::new_spanned(
+                        &*pat_type.ty,
+                        format!(
+                            "References in RPC method arguments are not supported yet. Method '{}' uses a reference in its argument '{}' ({}). Please use owned types.",
+                            method_name,
+                            quote! {#arg_name}, // Attempt to get arg name, might need refinement
+                            quote! {#ty}
+                        ),
+                    ));
+                }
+            }
+        }
+
+        // Check output for references
+        if let syn::ReturnType::Type(_, ty) = &method.sig.output {
+            if let syn::Type::Reference(ref_ty) = &**ty {
+                return Err(syn::Error::new_spanned(
+                    &**ty,
+                    format!(
+                        "References in RPC method return types are not supported yet. Method '{}' returns a reference ({}). Please use owned types.",
+                        method_name,
+                        quote! {#ref_ty}
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn generate_enum_variants<'a>(
     methods: &'a [&'a syn::TraitItemFn],
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + 'a {
@@ -128,6 +180,7 @@ fn generate_enum_variants<'a>(
             let ty = input_types
                 .first()
                 .expect("input_types should not be empty");
+
             quote! { #ty }
         } else {
             quote! { (#(#input_types),*) }

@@ -1,0 +1,5 @@
+error: References in RPC method return types are not supported yet. Method 'method_with_ref_return' returns a reference (& String). Please use owned types.
+ --> tests/fail/rpc_method_with_ref_return.rs:5:47
+  |
+5 |     async fn method_with_ref_return(&self) -> &String;
+  |                                               ^^^^^^^

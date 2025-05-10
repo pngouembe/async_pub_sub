@@ -58,7 +58,7 @@ where
 // between the publisher and subscriber.
 #[rpc_interface]
 trait MyServiceInterface {
-    async fn foo(&self) -> &'static str;
+    async fn foo(&self) -> String;
     async fn bar(&mut self, value: i32) -> Result<(), String>;
 }
 
@@ -72,8 +72,8 @@ struct MyService {
 }
 
 impl MyServiceInterface for MyService {
-    async fn foo(&self) -> &'static str {
-        "Hello from MyService!"
+    async fn foo(&self) -> String {
+        String::from("Hello from MyService!")
     }
 
     async fn bar(&mut self, value: i32) -> Result<(), String> {
