@@ -1,0 +1,5 @@
+error: References in RPC method arguments are not supported yet. Method 'method_with_ref_arg' uses a reference in its argument 'arg1' (& String). Please use owned types.
+ --> tests/fail/rpc_method_with_ref_arg.rs:5:47
+  |
+5 |     async fn method_with_ref_arg(&self, arg1: &String);
+  |                                               ^^^^^^^

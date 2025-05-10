@@ -1,9 +1,8 @@
 use async_pub_sub::SubscriberImpl;
-use async_pub_sub_macros::{rpc_interface, DeriveSubscriber};
+use async_pub_sub_macros::{DeriveSubscriber, rpc_interface};
 
 const NAME: &str = "Persistency";
 
-// TODO: find a way to handle references or forbid their use
 #[rpc_interface(Debug)]
 pub trait PersistencyInterface {
     async fn get_data(&self) -> Vec<u8>;
