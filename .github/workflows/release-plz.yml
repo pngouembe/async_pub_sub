@@ -5,9 +5,10 @@ permissions:
   contents: write
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Rust"]
+    branches: ["main"]
+    types: ["completed"]
 
 jobs:
 
@@ -15,6 +16,7 @@ jobs:
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
     steps:
@@ -36,6 +38,7 @@ jobs:
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
       pull-requests: write
