@@ -9,7 +9,7 @@ changelog_update = true
 changelog_path = "CHANGELOG.md"
 
 # Release settings
-release_always = false
+release_always = true 
 allow_dirty = false
 
 [[package]]
