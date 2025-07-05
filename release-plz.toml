@@ -1,0 +1,24 @@
+[workspace]
+# Git settings
+git_release_enable = true
+git_tag_enable = true
+git_tag_name = "{{ package }}-v{{ version }}"
+
+# Changelog settings
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+
+# Release settings
+release_always = false
+allow_dirty = false
+
+# Package-specific settings
+[[package]]
+name = "async_pub_sub_macros"
+# Macros crate should be published first due to dependency order
+publish_order = 1
+
+[[package]]
+name = "async_pub_sub"
+# Main crate depends on macros, so publish after
+publish_order = 2
