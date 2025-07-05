@@ -41,7 +41,7 @@ impl From<Request<Bar, String>> for ServiceRequest {
 
 impl Display for ServiceRequest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -84,7 +84,7 @@ impl Service {
 
     fn bar(&mut self, value: &Bar) -> String {
         let Bar(value) = value;
-        format!("bar: {}", value)
+        format!("bar: {value}")
     }
 }
 

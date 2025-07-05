@@ -40,7 +40,7 @@ where
     }
 
     pub async fn prefix_with_bar(&self, string: String) -> String {
-        format!("bar{}", string)
+        format!("bar{string}")
     }
 }
 
@@ -52,7 +52,7 @@ enum Functions {
 
 impl Display for Functions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

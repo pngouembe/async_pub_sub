@@ -232,8 +232,8 @@ fn generate_client_methods<'a>(
             quote! { (#(#request_content),*) }
         };
 
-        let publish_failure_message = format!("failed to publish {} request", name);
-        let response_failure_message = format!("failed to receive {} response", name);
+        let publish_failure_message = format!("failed to publish {name} request");
+        let response_failure_message = format!("failed to receive {name} response");
 
         quote! {
             fn #function_signature {

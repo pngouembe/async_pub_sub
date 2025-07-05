@@ -29,7 +29,7 @@ struct MyServer {
 
 impl MyServerInterface for MyServer {
     async fn perform_action(&self, action: String) -> String {
-        format!("Action performed: {}", action)
+        format!("Action performed: {action}")
     }
 
     async fn get_data(&self) -> String {

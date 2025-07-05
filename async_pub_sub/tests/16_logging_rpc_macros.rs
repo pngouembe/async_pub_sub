@@ -35,7 +35,7 @@ mod server {
         }
 
         async fn prefix_with_bar(&self, string: String) -> String {
-            format!("bar{}", string)
+            format!("bar{string}")
         }
     }
 }

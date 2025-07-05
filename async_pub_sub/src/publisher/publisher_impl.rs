@@ -114,7 +114,7 @@ where
             sender
                 .send(message)
                 .await
-                .map_err(|err| format!("Failed to send message (err: {})", err).into())
+                .map_err(|err| format!("Failed to send message (err: {err})").into())
         }
         .boxed()
     }
