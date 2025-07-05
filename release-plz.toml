@@ -12,17 +12,6 @@ changelog_path = "CHANGELOG.md"
 release_always = false
 allow_dirty = false
 
-# Package-specific settings
-[[package]]
-name = "async_pub_sub_macros"
-# Macros crate should be published first due to dependency order
-publish_order = 1
-
-[[package]]
-name = "async_pub_sub"
-# Main crate depends on macros, so publish after
-publish_order = 2
-
 [[package]]
 name = "tokio_implementations"
 publish = false
