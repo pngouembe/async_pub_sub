@@ -1,6 +1,6 @@
 [package]
 name = "async_pub_sub"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 license = "MIT"
 description = "A library aiming at making async pub-sub easier in Rust"
@@ -16,13 +16,13 @@ default = ["macros"]
 [dependencies]
 futures = "0.3.31"
 log = "0.4.26"
-async_pub_sub_macros = { version = "0.1.0", path = "../async_pub_sub_macros", optional = true }
+async_pub_sub_macros = { version = "0.1.4", path = "../async_pub_sub_macros", optional = true }
 
 [dev-dependencies]
 rand = "0.9.0"
 test-log = "0.2.17"
 tokio = { version = "1.34", features = ["full"] }
-async_pub_sub_macros = { version = "0.1.0", path = "../async_pub_sub_macros" }
+async_pub_sub_macros = { version = "0.1.4", path = "../async_pub_sub_macros" }
 simplelog = { version = "0.12.2", features = ["termcolor"] }
 
 [[example]]
