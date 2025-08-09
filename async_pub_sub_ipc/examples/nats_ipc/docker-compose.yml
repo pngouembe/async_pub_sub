@@ -1,0 +1,41 @@
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js", "-m", "8222"]
+    networks:
+      - app-network
+
+  app1:
+    build:
+      context: ../../..
+      dockerfile: async_pub_sub_ipc/examples/nats_ipc/Dockerfile
+    environment:
+      - SEND_FIRST=true
+      - NATS_URL=nats://nats:4222
+      - RUST_LOG=info
+    depends_on:
+      - nats
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  app2:
+    build:
+      context: ../../..
+      dockerfile: async_pub_sub_ipc/examples/nats_ipc/Dockerfile
+    environment:
+      - SEND_FIRST=false
+      - NATS_URL=nats://nats:4222
+      - RUST_LOG=info
+    depends_on:
+      - nats
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
