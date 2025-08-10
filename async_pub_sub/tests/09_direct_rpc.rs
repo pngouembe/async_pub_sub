@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use async_pub_sub::{Publisher, PublisherImpl, Request, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{Publisher, PublisherImpl, RequestImpl, Result, Subscriber, SubscriberImpl};
 use futures::{FutureExt, future::BoxFuture};
 
 #[derive(Debug, PartialEq)]
@@ -23,18 +23,18 @@ impl Display for Bar {
 
 #[derive(Debug)]
 enum ServiceRequest {
-    Foo(Request<Foo, i32>),
-    Bar(Request<Bar, String>),
+    Foo(RequestImpl<Foo, i32>),
+    Bar(RequestImpl<Bar, String>),
 }
 
-impl From<Request<Foo, i32>> for ServiceRequest {
-    fn from(request: Request<Foo, i32>) -> Self {
+impl From<RequestImpl<Foo, i32>> for ServiceRequest {
+    fn from(request: RequestImpl<Foo, i32>) -> Self {
         Self::Foo(request)
     }
 }
 
-impl From<Request<Bar, String>> for ServiceRequest {
-    fn from(request: Request<Bar, String>) -> Self {
+impl From<RequestImpl<Bar, String>> for ServiceRequest {
+    fn from(request: RequestImpl<Bar, String>) -> Self {
         Self::Bar(request)
     }
 }
@@ -120,14 +120,14 @@ async fn test_direct_rpc() -> Result<()> {
     });
 
     // -- Exec & Check
-    let (request, response) = Request::new(Foo(42));
+    let (request, response) = RequestImpl::new(Foo(42));
     publisher
         .publish(request.into())
         .await
         .expect("request published successfully");
     assert_eq!(response.await.expect("request successul"), 43);
 
-    let (request, response) = Request::new(Bar("hello".to_string()));
+    let (request, response) = RequestImpl::new(Bar("hello".to_string()));
     publisher
         .publish(request.into())
         .await

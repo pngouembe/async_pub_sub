@@ -6,8 +6,8 @@ pub trait RpcInterface {
     async fn prefix_with_bar(&self, string: String) -> String;
 }
 pub enum RpcInterfaceMessage {
-    AddOne(async_pub_sub::Request<i32, i32>),
-    PrefixWithBar(async_pub_sub::Request<String, String>),
+    AddOne(async_pub_sub::RequestImpl<i32, i32>),
+    PrefixWithBar(async_pub_sub::RequestImpl<String, String>),
 }
 #[automatically_derived]
 impl ::core::fmt::Debug for RpcInterfaceMessage {
@@ -74,7 +74,7 @@ impl RpcInterfaceClient {
 }
 impl RpcInterface for RpcInterfaceClient {
     fn add_one(&self, value: i32) -> async_pub_sub::futures::future::BoxFuture<i32> {
-        let (request, response) = async_pub_sub::Request::new(value);
+        let (request, response) = async_pub_sub::RequestImpl::new(value);
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::AddOne(request));
@@ -91,7 +91,7 @@ impl RpcInterface for RpcInterfaceClient {
         &self,
         string: String,
     ) -> async_pub_sub::futures::future::BoxFuture<String> {
-        let (request, response) = async_pub_sub::Request::new(string);
+        let (request, response) = async_pub_sub::RequestImpl::new(string);
         let publish_future = self
             .publisher
             .publish(RpcInterfaceMessage::PrefixWithBar(request));
@@ -117,12 +117,12 @@ pub trait RpcInterfaceServer: async_pub_sub::SubscriberWrapper<
     async fn handle_request(&mut self, request: RpcInterfaceMessage) {
         match request {
             RpcInterfaceMessage::AddOne(req) => {
-                let async_pub_sub::Request { content, response_sender } = req;
+                let async_pub_sub::RequestImpl { content, response_sender } = req;
                 let response = <Self as RpcInterface>::add_one(self, content).await;
                 response_sender.send(response).expect("failed to send response");
             }
             RpcInterfaceMessage::PrefixWithBar(req) => {
-                let async_pub_sub::Request { content, response_sender } = req;
+                let async_pub_sub::RequestImpl { content, response_sender } = req;
                 let response = <Self as RpcInterface>::prefix_with_bar(self, content)
                     .await;
                 response_sender.send(response).expect("failed to send response");

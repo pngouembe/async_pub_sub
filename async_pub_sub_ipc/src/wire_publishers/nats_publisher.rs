@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{IpcRequestPublisher, Result};
 use async_pub_sub::Publisher;
 use bytes::Bytes;
 use futures::FutureExt;
@@ -35,7 +35,10 @@ where
         message: Self::Message,
     ) -> futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async move {
-            let subject = std::any::type_name::<T>();
+            let subject = std::any::type_name::<T>()
+                .replace("<", "__")
+                .replace(">", "__")
+                .replace(" ", "__");
             self.nats_client.publish(subject, message).await?;
             Ok(())
         }
@@ -49,5 +52,39 @@ where
         std::pin::Pin<Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>>,
     > {
         Err("Cannot subscribe to a Nats Publisher, it can only be used to publish over the network.".into())
+    }
+}
+
+impl<T> IpcRequestPublisher for NatsPublisher<T>
+where
+    T: Send + Sync + 'static,
+{
+    fn get_name(&self) -> &'static str {
+        self.name
+    }
+
+    fn publish_request(
+        &self,
+        request: Bytes,
+        response_callback: impl FnOnce(Bytes) -> std::result::Result<(), String> + Send + 'static,
+    ) -> impl Future<Output = Result<()>> + Send {
+        let subject = std::any::type_name::<T>()
+            .replace("<", "__")
+            .replace(">", "__")
+            .replace(" ", "__");
+
+        log::debug!(
+            "[{}] Publishing request to subject '{}': {:?}",
+            self.name,
+            subject,
+            request
+        );
+
+        async move {
+            let response = self.nats_client.request(subject, request).await?;
+            response_callback(response.payload)?;
+            Ok(())
+        }
+        .boxed()
     }
 }

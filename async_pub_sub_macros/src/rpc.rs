@@ -21,7 +21,7 @@ impl Parse for AttributeArgs {
 }
 
 pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStream {
-   let attrs = parse_macro_input!(attr as AttributeArgs);
+    let attrs = parse_macro_input!(attr as AttributeArgs);
 
     let input_trait = match input.clone() {
         // Clone item for potential error reporting span
@@ -192,7 +192,7 @@ fn generate_enum_variants<'a>(
         };
 
         quote! {
-            #variant_name(async_pub_sub::Request<#input_types, #output_type>),
+            #variant_name(async_pub_sub::RequestImpl<#input_types, #output_type>),
         }
     })
 }
@@ -237,7 +237,7 @@ fn generate_client_methods<'a>(
 
         quote! {
             fn #function_signature {
-                let (request, response) = async_pub_sub::Request::new(#request_content);
+                let (request, response) = async_pub_sub::RequestImpl::new(#request_content);
                 let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
                 {
                     use async_pub_sub::futures::FutureExt;
@@ -293,7 +293,7 @@ fn generate_server_impl<'a>(
 
         quote! {
             #message_enum_name::#variant_name(req) => {
-                let async_pub_sub::Request {
+                let async_pub_sub::RequestImpl {
                     #content,
                     response_sender,
                 } = req;

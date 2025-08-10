@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use async_pub_sub::{
-    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, Request, Result, SubscriberImpl,
+    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, RequestImpl, Result, SubscriberImpl,
 };
 
 struct RpcClient<P> {
@@ -17,14 +17,14 @@ where
     }
 
     pub async fn add_one(&self, value: i32) -> Result<i32> {
-        let (request, response) = Request::<i32, i32>::new(value);
+        let (request, response) = RequestImpl::<i32, i32>::new(value);
         self.publisher.publish(Functions::AddOne(request)).await?;
         let response = response.await?;
         Ok(response)
     }
 
     pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
-        let (request, response) = Request::<String, String>::new(string);
+        let (request, response) = RequestImpl::<String, String>::new(string);
         self.publisher
             .publish(Functions::PrefixWithBar(request))
             .await?;
@@ -35,8 +35,8 @@ where
 
 #[derive(Debug)]
 enum Functions {
-    AddOne(Request<i32, i32>),
-    PrefixWithBar(Request<String, String>),
+    AddOne(RequestImpl<i32, i32>),
+    PrefixWithBar(RequestImpl<String, String>),
 }
 
 impl Display for Functions {

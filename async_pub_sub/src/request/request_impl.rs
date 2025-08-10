@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
 
+use crate::Request;
+
 /// A request structure that represents a request-response pattern for asynchronous communication.
 ///
 /// This struct encapsulates a request of type `Req` and provides a mechanism to send back
@@ -18,16 +20,16 @@ use std::fmt::{Debug, Display};
 /// # Examples
 ///
 /// ```
-/// # use async_pub_sub::Request;
+/// # use async_pub_sub::RequestImpl;
 /// # #[tokio::main]
 /// # async fn main() {
-/// let (request, response_receiver) = Request::new(String::from("hello"));
+/// let (request, response_receiver) = RequestImpl::new(String::from("hello"));
 /// assert_eq!(request.content, "hello");
 /// request.respond(42);
 /// assert_eq!(response_receiver.await.unwrap(), 42);
 /// # }
 /// ```
-pub struct Request<Req, Rsp>
+pub struct RequestImpl<Req, Rsp>
 where
     Req: Debug,
     Rsp: Debug,
@@ -36,7 +38,7 @@ where
     pub response_sender: futures::channel::oneshot::Sender<Rsp>,
 }
 
-impl<Req, Rsp> Request<Req, Rsp>
+impl<Req, Rsp> RequestImpl<Req, Rsp>
 where
     Req: Debug,
     Rsp: Debug,
@@ -59,7 +61,22 @@ where
     }
 }
 
-impl<Req, Rsp> Display for Request<Req, Rsp>
+impl<Req, Rsp> Request for RequestImpl<Req, Rsp>
+where
+    Req: Debug,
+    Rsp: Debug,
+{
+    type Response = Rsp;
+
+    fn respond(self, response: Self::Response) -> impl Future<Output = crate::Result<()>> {
+        async move {
+            RequestImpl::respond(self, response);
+            Ok(())
+        }
+    }
+}
+
+impl<Req, Rsp> Display for RequestImpl<Req, Rsp>
 where
     Req: Display + Debug,
     Rsp: Debug,
@@ -75,7 +92,7 @@ where
     }
 }
 
-impl<Req, Rsp> Debug for Request<Req, Rsp>
+impl<Req, Rsp> Debug for RequestImpl<Req, Rsp>
 where
     Req: Debug,
     Rsp: Debug,

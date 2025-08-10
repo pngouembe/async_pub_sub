@@ -1,16 +1,16 @@
-use async_pub_sub::{PublisherImpl, Request, Result, SubscriberImpl};
+use async_pub_sub::{PublisherImpl, RequestImpl, Result, SubscriberImpl};
 
 #[test_log::test(tokio::test)]
 async fn test_request_publisher() -> Result<()> {
     // -- Setup & Fixtures
-    let mut subscriber = SubscriberImpl::<Request<i32, i32>>::new("subscriber");
+    let mut subscriber = SubscriberImpl::<RequestImpl<i32, i32>>::new("subscriber");
     let mut publisher = PublisherImpl::new("publisher", 10);
 
     subscriber.subscribe_to(&mut publisher)?;
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let (request, response) = Request::new(42);
+        let (request, response) = RequestImpl::new(42);
         publisher
             .publish(request)
             .await

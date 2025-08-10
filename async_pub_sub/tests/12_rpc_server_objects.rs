@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use async_pub_sub::{
-    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, Request, Result, Subscriber,
+    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, RequestImpl, Result, Subscriber,
     SubscriberImpl,
 };
 
@@ -46,8 +46,8 @@ where
 
 #[derive(Debug)]
 enum Functions {
-    AddOne(Request<i32, i32>),
-    PrefixWithBar(Request<String, String>),
+    AddOne(RequestImpl<i32, i32>),
+    PrefixWithBar(RequestImpl<String, String>),
 }
 
 impl Display for Functions {
@@ -68,13 +68,13 @@ async fn test_rpc_server() -> async_pub_sub::Result<()> {
 
     // -- Exec
 
-    let (add_one_request, add_one_response) = Request::new(42);
+    let (add_one_request, add_one_response) = RequestImpl::new(42);
     publisher
         .publish(Functions::AddOne(add_one_request))
         .await?;
     let add_one_response = add_one_response.await?;
 
-    let (prefix_with_bar_request, prefix_with_bar_response) = Request::new("hello".to_string());
+    let (prefix_with_bar_request, prefix_with_bar_response) = RequestImpl::new("hello".to_string());
     publisher
         .publish(Functions::PrefixWithBar(prefix_with_bar_request))
         .await?;

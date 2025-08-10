@@ -1,22 +1,30 @@
-use crate::Result;
+use crate::{IpcRequestSubscriber, Result};
 use async_pub_sub::{Publisher, Subscriber};
 use bytes::Bytes;
-use futures::{FutureExt, StreamExt};
+use futures::{FutureExt, StreamExt, future::BoxFuture};
 
 pub struct NatsSubscriber<T> {
     name: &'static str,
-    _nats_client: async_nats::Client,
+    nats_client: async_nats::Client,
     nats_subscriber: async_nats::Subscriber,
     _marker: std::marker::PhantomData<T>,
 }
 
 impl<T> NatsSubscriber<T> {
     pub async fn new(name: &'static str, nats_url: &str) -> Result<Self> {
-        let _nats_client = async_nats::connect(nats_url).await?;
-        let nats_subscriber = _nats_client.subscribe(std::any::type_name::<T>()).await?;
+        let nats_client = async_nats::connect(nats_url).await?;
+        let nats_subscriber = nats_client
+            .subscribe(
+                // TODO: create a sanitization function for subject names
+                std::any::type_name::<T>()
+                    .replace("<", "__")
+                    .replace(">", "__")
+                    .replace(" ", "__"),
+            )
+            .await?;
         Ok(Self {
             name,
-            _nats_client,
+            nats_client,
             nats_subscriber,
             _marker: std::marker::PhantomData,
         })
@@ -48,6 +56,55 @@ where
                 .await
                 .expect("Should receive a message");
             msg.payload
+        }
+        .boxed()
+    }
+}
+
+impl<T> IpcRequestSubscriber for NatsSubscriber<T>
+where
+    T: Send + Sync + 'static,
+{
+    fn get_name(&self) -> &'static str {
+        self.name
+    }
+
+    fn receive_request(
+        &mut self,
+    ) -> BoxFuture<(
+        Bytes,
+        impl FnOnce(Bytes) -> BoxFuture<'static, ()> + Send + 'static,
+    )> {
+        let future_message = self.nats_subscriber.next();
+        let nats_client = self.nats_client.clone();
+        let name = self.name;
+        async move {
+            let msg = future_message.await.expect("Should receive a message");
+            let content = msg.payload;
+            log::debug!(
+                "[{}] Received request from subject '{}': {:?}",
+                name,
+                msg.subject,
+                content
+            );
+            (content, move |response| {
+                async move {
+                    if let Some(subject) = msg.reply {
+                        log::debug!(
+                            "[{}] Sending response to subject '{}': {:?}",
+                            name,
+                            subject,
+                            response
+                        );
+                        nats_client
+                            .publish(subject, response)
+                            .await
+                            .expect("Failed to publish response");
+                    }
+                    // Handle response logic here if needed
+                }
+                .boxed()
+            })
         }
         .boxed()
     }

@@ -2,6 +2,7 @@
 #![doc = include_str!("../README.md")]
 
 mod publisher;
+mod request;
 mod subscriber;
 mod utils;
 
@@ -11,8 +12,9 @@ pub use error::{Error, Result};
 
 pub use publisher::{
     DebuggingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
-    PublisherWrapper, Request,
+    PublisherWrapper,
 };
+pub use request::{Request, RequestImpl};
 pub use subscriber::{
     DebuggingSubscriberLayer, LoggingSubscriberLayer, Subscriber, SubscriberBuilder,
     SubscriberImpl, SubscriberWrapper,

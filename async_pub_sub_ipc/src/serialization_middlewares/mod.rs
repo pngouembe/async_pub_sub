@@ -1,3 +1,5 @@
+mod serde_json_request_serialization;
 mod serde_json_serialization;
 
+pub use serde_json_request_serialization::SerdeJsonRequestSerializationLayer;
 pub use serde_json_serialization::SerdeJsonSerializationLayer;
