@@ -1,7 +1,7 @@
 use futures::{FutureExt, SinkExt};
 
 use super::Publisher;
-use crate::Result;
+use crate::{Request, Requester, Result};
 
 /// A concrete implementation of the Publisher trait that handles message distribution
 /// to a single subscriber.
@@ -151,5 +151,19 @@ where
         self.subscriber_name = Some(subscriber_name);
 
         Ok(Box::pin(receiver))
+    }
+}
+
+impl<Message> Requester for PublisherImpl<Message>
+where
+    Message: Request + Send + Sync + 'static,
+{
+    async fn request(
+        &self,
+        request: Self::Message,
+    ) -> Result<<Self::Message as Request>::Response> {
+        let (request, response_future) = request.get_response();
+        self.publish(request).await?;
+        response_future.await
     }
 }

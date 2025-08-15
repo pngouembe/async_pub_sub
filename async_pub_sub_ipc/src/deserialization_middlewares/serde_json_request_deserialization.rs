@@ -96,6 +96,10 @@ where
 {
     type Response = Rsp;
 
+    fn get_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+        todo!()
+    }
+
     fn respond(self, response: Self::Response) -> impl futures::Future<Output = Result<()>> {
         async move {
             (self.response_callback)(response).await;

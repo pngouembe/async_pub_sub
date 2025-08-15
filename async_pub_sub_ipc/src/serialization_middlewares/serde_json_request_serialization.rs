@@ -59,6 +59,7 @@ where
         let RequestImpl {
             content,
             response_sender,
+            ..
         } = message;
 
         async move {

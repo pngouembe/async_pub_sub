@@ -14,7 +14,7 @@ pub use publisher::{
     DebuggingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
     PublisherWrapper,
 };
-pub use request::{Request, RequestImpl};
+pub use request::{Request, RequestImpl, Requester};
 pub use subscriber::{
     DebuggingSubscriberLayer, LoggingSubscriberLayer, Subscriber, SubscriberBuilder,
     SubscriberImpl, SubscriberWrapper,

@@ -17,6 +17,15 @@ impl<Req, Rsp> CustomRequest<Req, Rsp> {
 impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
     type Response = Rsp;
 
+    fn get_response(
+        self,
+    ) -> (
+        Self,
+        futures::future::BoxFuture<'static, Result<Self::Response>>,
+    ) {
+        todo!()
+    }
+
     fn respond(self, response: Self::Response) -> impl Future<Output = Result<()>> {
         async move {
             (self.response_callback)(response);

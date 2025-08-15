@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
 use async_pub_sub::{
-    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, RequestImpl, Result, Subscriber,
-    SubscriberImpl,
+    Layer, LoggingPublisherLayer, Publisher, PublisherImpl, Request, RequestImpl, Result,
+    Subscriber, SubscriberImpl,
 };
 
 struct RpcServer<S> {
@@ -24,12 +24,12 @@ where
                 Functions::AddOne(req) => {
                     let input = req.content;
                     let response = self.add_one(input).await;
-                    req.respond(response);
+                    req.respond(response).await.unwrap();
                 }
                 Functions::PrefixWithBar(req) => {
                     let input = req.content.clone();
                     let response = self.prefix_with_bar(input).await;
-                    req.respond(response);
+                    req.respond(response).await.unwrap();
                 }
             }
         }
@@ -68,13 +68,14 @@ async fn test_rpc_server() -> async_pub_sub::Result<()> {
 
     // -- Exec
 
-    let (add_one_request, add_one_response) = RequestImpl::new(42);
+    let (add_one_request, add_one_response) = RequestImpl::new(42).get_response();
     publisher
         .publish(Functions::AddOne(add_one_request))
         .await?;
     let add_one_response = add_one_response.await?;
 
-    let (prefix_with_bar_request, prefix_with_bar_response) = RequestImpl::new("hello".to_string());
+    let (prefix_with_bar_request, prefix_with_bar_response) =
+        RequestImpl::new("hello".to_string()).get_response();
     publisher
         .publish(Functions::PrefixWithBar(prefix_with_bar_request))
         .await?;

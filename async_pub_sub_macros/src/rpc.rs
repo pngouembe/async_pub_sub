@@ -237,7 +237,8 @@ fn generate_client_methods<'a>(
 
         quote! {
             fn #function_signature {
-                let (request, response) = async_pub_sub::RequestImpl::new(#request_content);
+                let (request, response) = async_pub_sub::Request::get_response(async_pub_sub::RequestImpl::new(#request_content));
+
                 let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
                 {
                     use async_pub_sub::futures::FutureExt;
@@ -296,6 +297,7 @@ fn generate_server_impl<'a>(
                 let async_pub_sub::RequestImpl {
                     #content,
                     response_sender,
+                    ..
                 } = req;
                 #function_call
                 response_sender.send(response).expect("failed to send response");

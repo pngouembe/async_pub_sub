@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Display};
 
-use crate::Request;
+use futures::{FutureExt, future::BoxFuture};
+
+use crate::{Request, Result};
 
 /// A request structure that represents a request-response pattern for asynchronous communication.
 ///
@@ -20,12 +22,12 @@ use crate::Request;
 /// # Examples
 ///
 /// ```
-/// # use async_pub_sub::RequestImpl;
+/// use async_pub_sub::{RequestImpl, Request};
 /// # #[tokio::main]
 /// # async fn main() {
-/// let (request, response_receiver) = RequestImpl::new(String::from("hello"));
+/// let (request, response_receiver) = RequestImpl::new(String::from("hello")).get_response();
 /// assert_eq!(request.content, "hello");
-/// request.respond(42);
+/// request.respond(42).await.unwrap();
 /// assert_eq!(response_receiver.await.unwrap(), 42);
 /// # }
 /// ```
@@ -35,6 +37,7 @@ where
     Rsp: Debug,
 {
     pub content: Req,
+    pub response_receiver: Option<futures::channel::oneshot::Receiver<Rsp>>,
     pub response_sender: futures::channel::oneshot::Sender<Rsp>,
 }
 
@@ -43,34 +46,45 @@ where
     Req: Debug,
     Rsp: Debug,
 {
-    pub fn new(content: Req) -> (Self, futures::channel::oneshot::Receiver<Rsp>) {
+    pub fn new(content: Req) -> Self {
         let (response_sender, response_receiver) = futures::channel::oneshot::channel();
-        (
-            Self {
-                content,
-                response_sender,
-            },
-            response_receiver,
-        )
-    }
 
-    pub fn respond(self, response: Rsp) {
-        self.response_sender
-            .send(response)
-            .expect("failed to send response");
+        Self {
+            content,
+            response_receiver: Some(response_receiver),
+            response_sender,
+        }
     }
 }
 
 impl<Req, Rsp> Request for RequestImpl<Req, Rsp>
 where
     Req: Debug,
-    Rsp: Debug,
+    Rsp: Debug + Send + 'static,
 {
     type Response = Rsp;
 
+    fn get_response(mut self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+        let Some(response_receiver) = self.response_receiver.take() else {
+            return (
+                self,
+                async move { Err("response channel closed".into()) }.boxed(),
+            );
+        };
+        let future = async move {
+            response_receiver
+                .await
+                .map_err(|e| format!("failed to receive response: {}", e).into())
+        }
+        .boxed();
+        (self, future)
+    }
+
     fn respond(self, response: Self::Response) -> impl Future<Output = crate::Result<()>> {
         async move {
-            RequestImpl::respond(self, response);
+            self.response_sender
+                .send(response)
+                .expect("failed to send response");
             Ok(())
         }
     }

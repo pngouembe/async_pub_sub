@@ -89,7 +89,7 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
             let request = format!("Hello from {} {}", app_name, request_counter);
             log::info!("[{app_name}-rpc] Sending request: {}", request);
 
-            let (request, response) = RequestImpl::new(request);
+            let (request, response) = RequestImpl::new(request).get_response();
 
             request_publisher.publish(request).await?;
             request_counter += 1;

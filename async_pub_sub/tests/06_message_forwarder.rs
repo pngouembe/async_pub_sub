@@ -1,6 +1,8 @@
 use std::{fmt::Display, pin::Pin};
 
-use async_pub_sub::{Publisher, PublisherImpl, RequestImpl, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{
+    Publisher, PublisherImpl, Request, RequestImpl, Result, Subscriber, SubscriberImpl,
+};
 use futures::{
     FutureExt, Stream, StreamExt,
     future::BoxFuture,
@@ -101,7 +103,7 @@ async fn test_message_forwarder() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let (request, response) = RequestImpl::new(42);
+        let (request, response) = RequestImpl::new(42).get_response();
         publisher
             .publish(request)
             .await
@@ -113,7 +115,7 @@ async fn test_message_forwarder() -> Result<()> {
         let request = subscriber.receive().await;
         let response = request.content + 1;
 
-        request.respond(response);
+        request.respond(response).await.unwrap();
     });
 
     // -- Check
