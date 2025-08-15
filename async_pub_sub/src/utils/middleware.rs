@@ -15,7 +15,7 @@ pub trait Layer<Inner> {
     ///
     /// # Returns
     /// A new instance wrapped with this layer's functionality
-    fn layer(&self, inner: Inner) -> Self::LayerType;
+    fn layer(self, inner: Inner) -> Self::LayerType;
 }
 
 /// Layer that does not alter the pipeline.
@@ -33,7 +33,7 @@ impl IdentityLayer {
 impl<T> Layer<T> for IdentityLayer {
     type LayerType = T;
 
-    fn layer(&self, inner: T) -> Self::LayerType {
+    fn layer(self, inner: T) -> Self::LayerType {
         inner
     }
 }
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn identity_layer_passes_through() {
         let value = 42;
-        let layered = Layer::layer(&IdentityLayer::new(), value);
+        let layered = Layer::layer(IdentityLayer::new(), value);
         assert_eq!(layered, value);
     }
 }

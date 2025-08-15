@@ -26,7 +26,7 @@ where
 {
     type LayerType = SerdeJsonRequestDeserializationSubscriber<Req, Rsp, S>;
 
-    fn layer(&self, subscriber: S) -> Self::LayerType {
+    fn layer(self, subscriber: S) -> Self::LayerType {
         SerdeJsonRequestDeserializationSubscriber {
             subscriber,
             _phantom: std::marker::PhantomData,
@@ -94,10 +94,15 @@ impl<Req, Rsp> Request for CustomRequest<Req, Rsp>
 where
     Rsp: Send,
 {
+    type Content = Req;
     type Response = Rsp;
 
     fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
         todo!()
+    }
+
+    fn get_content(&self) -> &Self::Content {
+        &self.content
     }
 
     fn respond(self, response: Self::Response) -> impl futures::Future<Output = Result<()>> {

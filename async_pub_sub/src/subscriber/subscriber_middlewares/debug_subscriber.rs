@@ -14,7 +14,7 @@ where
 {
     type LayerType = DebugSubscriber<S>;
 
-    fn layer(&self, subscriber: S) -> Self::LayerType {
+    fn layer(self, subscriber: S) -> Self::LayerType {
         DebugSubscriber {
             publisher_name: None,
             subscriber,

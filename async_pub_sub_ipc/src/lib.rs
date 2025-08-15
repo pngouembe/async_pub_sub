@@ -6,14 +6,14 @@ mod wire_subscribers;
 
 use bytes::Bytes;
 use futures::future::BoxFuture;
-pub use wire_publishers::NatsPublisher;
-pub use wire_subscribers::NatsSubscriber;
+pub use wire_publishers::{NatsPublisher, NatsRequestPublisher};
+pub use wire_subscribers::{NatsRequest, NatsRequestSubscriber, NatsSubscriber};
 
 pub use deserialization_middlewares::{
     SerdeJsonDeserializationLayer, SerdeJsonRequestDeserializationLayer,
 };
 pub use serialization_middlewares::{
-    SerdeJsonRequestSerializationLayer, SerdeJsonSerializationLayer,
+    SerdeJsonRequestSerializationLayer, SerdeJsonSerializationLayer, SerdeRequestSerializationLayer,
 };
 
 pub use error::{Error, Result};

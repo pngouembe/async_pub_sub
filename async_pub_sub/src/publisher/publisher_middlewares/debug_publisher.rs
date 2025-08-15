@@ -1,6 +1,6 @@
 use std::{fmt::Debug, pin::Pin};
 
-use futures::{future::BoxFuture, FutureExt, Stream};
+use futures::{FutureExt, Stream, future::BoxFuture};
 
 use crate::{Layer, Publisher, Result};
 
@@ -15,7 +15,7 @@ where
 {
     type LayerType = DebugPublisher<P>;
 
-    fn layer(&self, publisher: P) -> Self::LayerType {
+    fn layer(self, publisher: P) -> Self::LayerType {
         DebugPublisher {
             subscriber_name: None,
             publisher,

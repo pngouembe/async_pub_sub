@@ -23,7 +23,7 @@ where
 {
     type LayerType = SerdeJsonDeserializationSubscriber<Message, S>;
 
-    fn layer(&self, subscriber: S) -> Self::LayerType {
+    fn layer(self, subscriber: S) -> Self::LayerType {
         SerdeJsonDeserializationSubscriber {
             subscriber,
             _phantom: std::marker::PhantomData,

@@ -62,6 +62,7 @@ where
     Req: Debug,
     Rsp: Debug + Send + 'static,
 {
+    type Content = Req;
     type Response = Rsp;
 
     fn take_response(mut self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
@@ -78,6 +79,10 @@ where
         }
         .boxed();
         (self, future)
+    }
+
+    fn get_content(&self) -> &Self::Content {
+        &self.content
     }
 
     fn respond(self, response: Self::Response) -> impl Future<Output = crate::Result<()>> {

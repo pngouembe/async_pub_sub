@@ -92,6 +92,7 @@ impl ::core::fmt::Debug for RpcInterfaceResponse {
     }
 }
 impl async_pub_sub::Request for RpcInterfaceMessage {
+    type Content = RpcInterfaceMessage;
     type Response = RpcInterfaceResponse;
     fn take_response(
         self,
@@ -150,6 +151,9 @@ impl async_pub_sub::Request for RpcInterfaceMessage {
                 (RpcInterfaceMessage::SetTata(request), response_future)
             }
         }
+    }
+    fn get_content(&self) -> &Self::Content {
+        ::core::panicking::panic("not implemented")
     }
     fn respond(
         self,

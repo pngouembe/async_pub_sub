@@ -1,6 +1,6 @@
 use crate::{
-    utils::{IdentityLayer, Layer},
     Subscriber,
+    utils::{IdentityLayer, Layer},
 };
 
 /// A builder pattern implementation for constructing a subscriber with middleware layers.
@@ -44,6 +44,6 @@ impl<L> SubscriberBuilder<L> {
         L: Layer<S>,
         L::LayerType: Subscriber,
     {
-        Layer::layer(&self.layer, subscriber)
+        Layer::layer(self.layer, subscriber)
     }
 }

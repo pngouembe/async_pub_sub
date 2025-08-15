@@ -15,6 +15,7 @@ impl<Req, Rsp> CustomRequest<Req, Rsp> {
 }
 
 impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
+    type Content = Req;
     type Response = Rsp;
 
     fn take_response(
@@ -24,6 +25,10 @@ impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
         futures::future::BoxFuture<'static, Result<Self::Response>>,
     ) {
         todo!()
+    }
+
+    fn get_content(&self) -> &Self::Content {
+        &self.content
     }
 
     fn respond(self, response: Self::Response) -> impl Future<Output = Result<()>> {

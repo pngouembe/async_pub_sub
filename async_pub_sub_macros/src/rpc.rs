@@ -388,6 +388,7 @@ fn generate_request_trait_impl(
 
     quote! {
         impl async_pub_sub::Request for #message_enum_name {
+            type Content = #message_enum_name;
             type Response = #response_enum_name;
 
             fn take_response(
@@ -400,6 +401,10 @@ fn generate_request_trait_impl(
                 match self {
                     #(#take_response_arms)*
                 }
+            }
+
+            fn get_content(&self) -> &Self::Content {
+                unimplemented!()
             }
 
             fn respond(self, response: Self::Response) -> impl std::future::Future<Output = async_pub_sub::Result<()>> {

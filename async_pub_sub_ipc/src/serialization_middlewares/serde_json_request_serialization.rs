@@ -27,7 +27,7 @@ where
 {
     type LayerType = SerdeJsonRequestSerializationPublisher<Req, Rsp, P>;
 
-    fn layer(&self, publisher: P) -> Self::LayerType {
+    fn layer(self, publisher: P) -> Self::LayerType {
         SerdeJsonRequestSerializationPublisher {
             publisher,
             _phantom: std::marker::PhantomData,

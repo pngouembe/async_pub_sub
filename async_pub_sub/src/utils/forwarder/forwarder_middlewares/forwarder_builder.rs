@@ -44,6 +44,6 @@ impl<L> ForwarderBuilder<L> {
         L: Layer<F>,
         L::LayerType: Forwarder,
     {
-        Layer::layer(&self.layer, forwarder)
+        Layer::layer(self.layer, forwarder)
     }
 }

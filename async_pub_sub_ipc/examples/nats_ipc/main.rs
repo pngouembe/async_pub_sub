@@ -1,11 +1,13 @@
 use async_pub_sub::{
-    Publisher, PublisherBuilder, Request, RequestImpl, Result, Subscriber, SubscriberBuilder,
+    Error, Publisher, PublisherBuilder, Request, RequestImpl, Requester, Result, Subscriber,
+    SubscriberBuilder,
 };
 use async_pub_sub_ipc::{
-    NatsPublisher, NatsSubscriber, SerdeJsonDeserializationLayer,
-    SerdeJsonRequestDeserializationLayer, SerdeJsonRequestSerializationLayer,
-    SerdeJsonSerializationLayer,
+    NatsPublisher, NatsRequestPublisher, NatsSubscriber, SerdeJsonDeserializationLayer,
+    SerdeJsonRequestDeserializationLayer, SerdeJsonSerializationLayer,
+    SerdeRequestSerializationLayer,
 };
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::env;
 
@@ -69,16 +71,26 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
     let mut request_counter = 0;
 
     let request_publisher = PublisherBuilder::new()
-        .layer(SerdeJsonRequestSerializationLayer::<String, String>::new())
+        .layer(SerdeRequestSerializationLayer::<String, String>::new(
+            |msg| {
+                serde_json::to_vec(msg)
+                    .map(Bytes::from)
+                    .map_err(Error::from)
+            },
+            |bytes| serde_json::from_slice(bytes).map_err(Error::from),
+        ))
         .publisher(
-            NatsPublisher::<RequestImpl<String, String>>::new("NatsRequestPublisher", &nats_url)
-                .await?,
+            NatsRequestPublisher::<RequestImpl<Bytes, Bytes>>::new(
+                "NatsRequestPublisher",
+                &nats_url,
+            )
+            .await?,
         );
 
     let mut request_subscriber = SubscriberBuilder::new()
         .layer(SerdeJsonRequestDeserializationLayer::<String, String>::new())
         .subscriber(
-            NatsSubscriber::<RequestImpl<String, String>>::new("NatsRequestSubscriber", &nats_url)
+            NatsSubscriber::<RequestImpl<Bytes, Bytes>>::new("NatsRequestSubscriber", &nats_url)
                 .await?,
         );
 
@@ -89,13 +101,11 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
             let request = format!("Hello from {} {}", app_name, request_counter);
             log::info!("[{app_name}-rpc] Sending request: {}", request);
 
-            let (request, response) = RequestImpl::new(request).take_response();
+            let request = RequestImpl::new(request);
 
-            request_publisher.publish(request).await?;
+            let response = request_publisher.request(request).await?;
             request_counter += 1;
 
-            log::info!("[{app_name}-rpc] waiting for response...");
-            let response = response.await?;
             log::info!("[{app_name}-rpc] received response: {}", response);
         }
     } else {

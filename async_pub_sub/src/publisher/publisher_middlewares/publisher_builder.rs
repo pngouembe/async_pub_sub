@@ -1,4 +1,4 @@
-use crate::{utils::IdentityLayer, Layer, Publisher};
+use crate::{Layer, Publisher, utils::IdentityLayer};
 
 /// A builder pattern implementation for constructing a publisher with middleware layers.
 /// This struct allows for composing multiple middleware layers.
@@ -41,6 +41,6 @@ impl<L> PublisherBuilder<L> {
         L: Layer<P>,
         L::LayerType: Publisher,
     {
-        Layer::layer(&self.layer, publisher)
+        Layer::layer(self.layer, publisher)
     }
 }

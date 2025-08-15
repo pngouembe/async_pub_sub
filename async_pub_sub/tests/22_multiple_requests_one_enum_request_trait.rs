@@ -13,6 +13,7 @@ enum RpcRequestsResponses {
 }
 
 impl Request for RpcRequests {
+    type Content = RpcRequests;
     type Response = RpcRequestsResponses;
 
     fn take_response(
@@ -41,6 +42,10 @@ impl Request for RpcRequests {
                 (RpcRequests::Add(request), response_future)
             }
         }
+    }
+
+    fn get_content(&self) -> &Self::Content {
+        unimplemented!()
     }
 
     fn respond(self, response: Self::Response) -> impl Future<Output = Result<()>> {

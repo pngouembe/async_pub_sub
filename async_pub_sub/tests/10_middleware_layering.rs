@@ -1,7 +1,7 @@
 use std::{fmt::Display, pin::Pin};
 
 use async_pub_sub::{Layer, Publisher, PublisherImpl, Result, SubscriberImpl};
-use futures::{future::BoxFuture, FutureExt, Stream};
+use futures::{FutureExt, Stream, future::BoxFuture};
 
 struct LoggingPublisherLayer;
 
@@ -12,7 +12,7 @@ where
 {
     type LayerType = LoggingPublisher<P>;
 
-    fn layer(&self, publisher: P) -> Self::LayerType {
+    fn layer(self, publisher: P) -> Self::LayerType {
         LoggingPublisher {
             subscriber_name: None,
             publisher,

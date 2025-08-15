@@ -16,7 +16,7 @@ where
 {
     type LayerType = DebugForwarder<F>;
 
-    fn layer(&self, forwarder: F) -> Self::LayerType {
+    fn layer(self, forwarder: F) -> Self::LayerType {
         DebugForwarder {
             subscriber_name: None,
             forwarder,
