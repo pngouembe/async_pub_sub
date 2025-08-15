@@ -103,7 +103,7 @@ async fn test_message_forwarder() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let (request, response) = RequestImpl::new(42).get_response();
+        let (request, response) = RequestImpl::new(42).take_response();
         publisher
             .publish(request)
             .await

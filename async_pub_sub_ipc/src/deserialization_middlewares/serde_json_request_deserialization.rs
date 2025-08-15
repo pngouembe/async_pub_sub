@@ -96,7 +96,7 @@ where
 {
     type Response = Rsp;
 
-    fn get_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+    fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
         todo!()
     }
 

@@ -17,7 +17,7 @@ impl<Req, Rsp> CustomRequest<Req, Rsp> {
 impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
     type Response = Rsp;
 
-    fn get_response(
+    fn take_response(
         self,
     ) -> (
         Self,

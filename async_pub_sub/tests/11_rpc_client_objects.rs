@@ -18,14 +18,14 @@ where
     }
 
     pub async fn add_one(&self, value: i32) -> Result<i32> {
-        let (request, response) = RequestImpl::<i32, i32>::new(value).get_response();
+        let (request, response) = RequestImpl::<i32, i32>::new(value).take_response();
         self.publisher.publish(Functions::AddOne(request)).await?;
         let response = response.await?;
         Ok(response)
     }
 
     pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
-        let (request, response) = RequestImpl::<String, String>::new(string).get_response();
+        let (request, response) = RequestImpl::<String, String>::new(string).take_response();
         self.publisher
             .publish(Functions::PrefixWithBar(request))
             .await?;

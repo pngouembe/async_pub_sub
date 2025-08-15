@@ -41,6 +41,7 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
 
     let trait_name = input_trait.ident.clone();
     let message_enum_name = format_ident!("{}Message", trait_name);
+    let response_enum_name = format_ident!("{}Response", trait_name);
     let client_name = format_ident!("{}Client", trait_name);
     let server_trait_name = format_ident!("{}Server", trait_name);
 
@@ -61,7 +62,10 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
     }
 
     let enum_variants = generate_enum_variants(&methods);
-    let client_methods = generate_client_methods(&message_enum_name, &methods);
+    let response_variants = generate_response_variants(&methods);
+    let request_trait_impl =
+        generate_request_trait_impl(&message_enum_name, &response_enum_name, &methods);
+    let client_methods = generate_client_methods(&message_enum_name, &response_enum_name, &methods);
     let server_impl = generate_server_impl(&message_enum_name, &trait_name, &methods);
     let server_trait_impl =
         generate_server_trait_impl(&server_trait_name, &message_enum_name, &trait_name);
@@ -75,11 +79,18 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             #(#enum_variants)*
         }
 
+        #[derive(PartialEq, Debug)]
+        pub enum #response_enum_name {
+            #(#response_variants)*
+        }
+
+        #request_trait_impl
+
         #[derive(async_pub_sub::macros::DerivePublisher)]
         pub struct #client_name
         {
             #[publisher(#message_enum_name)]
-            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name> + Send>,
+            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name>  + Send>,
         }
 
         impl #client_name
@@ -89,6 +100,24 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
                 P: async_pub_sub::Publisher<Message = #message_enum_name> + Send + 'static,
             {
                 Self { publisher: Box::new(publisher) }
+            }
+        }
+
+        impl async_pub_sub::Requester for #client_name
+        where
+            #message_enum_name: async_pub_sub::Request,
+        {
+            fn request(
+                &self,
+                request: Self::Message,
+            ) -> impl std::future::Future<Output = async_pub_sub::Result<<Self::Message as async_pub_sub::Request>::Response>> {
+                use async_pub_sub::Request;
+                let (request, response) = request.take_response();
+                let publication_future = self.publisher.publish(request);
+                async move {
+                    publication_future.await?;
+                    response.await
+                }
             }
         }
 
@@ -199,6 +228,7 @@ fn generate_enum_variants<'a>(
 
 fn generate_client_methods<'a>(
     message_enum_name: &'a syn::Ident,
+    response_enum_name: &'a syn::Ident,
     methods: &'a [&'a syn::TraitItemFn],
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + 'a {
     methods.iter().map(move |method| {
@@ -232,25 +262,21 @@ fn generate_client_methods<'a>(
             quote! { (#(#request_content),*) }
         };
 
-        let publish_failure_message = format!("failed to publish {name} request");
-        let response_failure_message = format!("failed to receive {name} response");
+        let failure_message = format!("failed to execute {name} request");
 
         quote! {
             fn #function_signature {
-                let (request, response) = async_pub_sub::Request::get_response(async_pub_sub::RequestImpl::new(#request_content));
+                let request = #message_enum_name::#variant_name(async_pub_sub::RequestImpl::new(#request_content));
 
-                let publish_future = self.publisher.publish(#message_enum_name::#variant_name(request));
-                {
-                    use async_pub_sub::futures::FutureExt;
+                use async_pub_sub::Requester;
+                let response = self.request(request);
 
-                    async move {
-                        publish_future
-                            .await
-                            .expect(#publish_failure_message);
-                        response.await.expect(#response_failure_message)
-                    }
-                    .boxed()
-                }
+                async_pub_sub::futures::FutureExt::boxed(async move {
+                    let #response_enum_name::#variant_name(actual_response) = response.await.expect(#failure_message) else {
+                        panic!("{}: Expected {} response", #failure_message, stringify!(#variant_name));
+                    };
+                    actual_response
+                })
             }
         }
     })
@@ -304,6 +330,87 @@ fn generate_server_impl<'a>(
             }
         }
     })
+}
+
+fn generate_response_variants<'a>(
+    methods: &'a [&'a syn::TraitItemFn],
+) -> impl Iterator<Item = proc_macro2::TokenStream> + 'a {
+    methods.iter().map(|method| {
+        let name = &method.sig.ident;
+        let variant_name = format_ident!("{}", name.to_string().to_upper_camel_case());
+
+        let output_type = match &method.sig.output {
+            syn::ReturnType::Type(_, ty) => quote! { #ty },
+            syn::ReturnType::Default => quote! { () },
+        };
+
+        quote! {
+            #variant_name(#output_type),
+        }
+    })
+}
+
+fn generate_request_trait_impl(
+    message_enum_name: &syn::Ident,
+    response_enum_name: &syn::Ident,
+    methods: &[&syn::TraitItemFn],
+) -> proc_macro2::TokenStream {
+    let take_response_arms = methods.iter().map(|method| {
+        let name = &method.sig.ident;
+        let variant_name = format_ident!("{}", name.to_string().to_upper_camel_case());
+
+        quote! {
+            #message_enum_name::#variant_name(request) => {
+                let (request, response_future) = request.take_response();
+                let response_future = async move {
+                    let response = response_future.await?;
+                    Ok(#response_enum_name::#variant_name(response))
+                }
+                .boxed();
+                (#message_enum_name::#variant_name(request), response_future)
+            }
+        }
+    });
+
+    let respond_arms = methods.iter().map(|method| {
+        let name = &method.sig.ident;
+        let variant_name = format_ident!("{}", name.to_string().to_upper_camel_case());
+
+        quote! {
+            #message_enum_name::#variant_name(request) => {
+                let #response_enum_name::#variant_name(response) = response else {
+                    panic!("Expected {} response", stringify!(#variant_name));
+                };
+                request.respond(response).await
+            }
+        }
+    });
+
+    quote! {
+        impl async_pub_sub::Request for #message_enum_name {
+            type Response = #response_enum_name;
+
+            fn take_response(
+                self,
+            ) -> (
+                Self,
+                async_pub_sub::futures::future::BoxFuture<'static, async_pub_sub::Result<Self::Response>>,
+            ) {
+                use async_pub_sub::futures::FutureExt;
+                match self {
+                    #(#take_response_arms)*
+                }
+            }
+
+            fn respond(self, response: Self::Response) -> impl std::future::Future<Output = async_pub_sub::Result<()>> {
+                async move {
+                    match self {
+                        #(#respond_arms)*
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn generate_server_trait_impl(

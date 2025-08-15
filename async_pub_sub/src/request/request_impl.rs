@@ -25,7 +25,7 @@ use crate::{Request, Result};
 /// use async_pub_sub::{RequestImpl, Request};
 /// # #[tokio::main]
 /// # async fn main() {
-/// let (request, response_receiver) = RequestImpl::new(String::from("hello")).get_response();
+/// let (request, response_receiver) = RequestImpl::new(String::from("hello")).take_response();
 /// assert_eq!(request.content, "hello");
 /// request.respond(42).await.unwrap();
 /// assert_eq!(response_receiver.await.unwrap(), 42);
@@ -64,7 +64,7 @@ where
 {
     type Response = Rsp;
 
-    fn get_response(mut self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+    fn take_response(mut self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
         let Some(response_receiver) = self.response_receiver.take() else {
             return (
                 self,

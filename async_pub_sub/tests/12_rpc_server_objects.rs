@@ -68,14 +68,14 @@ async fn test_rpc_server() -> async_pub_sub::Result<()> {
 
     // -- Exec
 
-    let (add_one_request, add_one_response) = RequestImpl::new(42).get_response();
+    let (add_one_request, add_one_response) = RequestImpl::new(42).take_response();
     publisher
         .publish(Functions::AddOne(add_one_request))
         .await?;
     let add_one_response = add_one_response.await?;
 
     let (prefix_with_bar_request, prefix_with_bar_response) =
-        RequestImpl::new("hello".to_string()).get_response();
+        RequestImpl::new("hello".to_string()).take_response();
     publisher
         .publish(Functions::PrefixWithBar(prefix_with_bar_request))
         .await?;

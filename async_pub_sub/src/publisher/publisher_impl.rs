@@ -162,7 +162,7 @@ where
         &self,
         request: Self::Message,
     ) -> Result<<Self::Message as Request>::Response> {
-        let (request, response_future) = request.get_response();
+        let (request, response_future) = request.take_response();
         self.publish(request).await?;
         response_future.await
     }
