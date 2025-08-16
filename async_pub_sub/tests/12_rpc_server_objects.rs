@@ -21,13 +21,13 @@ where
         loop {
             let request = self.subscriber.receive().await;
             match request {
-                Functions::AddOne(req) => {
-                    let input = req.content;
+                Functions::AddOne(mut req) => {
+                    let input = req.take_content().unwrap();
                     let response = self.add_one(input).await;
                     req.respond(response).await.unwrap();
                 }
-                Functions::PrefixWithBar(req) => {
-                    let input = req.content.clone();
+                Functions::PrefixWithBar(mut req) => {
+                    let input = req.take_content().unwrap();
                     let response = self.prefix_with_bar(input).await;
                     req.respond(response).await.unwrap();
                 }

@@ -67,12 +67,14 @@ impl Service {
 
     async fn handle_request(&mut self, request: ServiceRequest) {
         match request {
-            ServiceRequest::Foo(request) => {
-                let response = self.foo(&request.content);
+            ServiceRequest::Foo(mut request) => {
+                let content = request.take_content().unwrap();
+                let response = self.foo(&content);
                 request.respond(response).await.unwrap();
             }
-            ServiceRequest::Bar(request) => {
-                let response = self.bar(&request.content);
+            ServiceRequest::Bar(mut request) => {
+                let content = request.take_content().unwrap();
+                let response = self.bar(&content);
                 request.respond(response).await.unwrap();
             }
         }

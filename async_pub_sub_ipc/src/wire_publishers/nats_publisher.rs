@@ -62,11 +62,11 @@ where
 {
     fn request(
         &self,
-        request: Self::Message,
+        mut request: Self::Message,
     ) -> impl Future<Output = async_pub_sub::Result<<Self::Message as async_pub_sub::Request>::Response>>
     {
         async move {
-            let content = request.get_content().clone();
+            let content = request.take_content().unwrap();
             let subject = std::any::type_name::<T>()
                 .replace("<", "__")
                 .replace(">", "__")
@@ -142,7 +142,7 @@ impl<T> Publisher for NatsRequestPublisher<T> {
 
     fn publish(
         &self,
-        message: Self::Message,
+        mut message: Self::Message,
     ) -> futures::future::BoxFuture<async_pub_sub::Result<()>> {
         let nats_client = self.nats_client.clone();
         async move {
@@ -150,7 +150,7 @@ impl<T> Publisher for NatsRequestPublisher<T> {
                 .replace("<", "__")
                 .replace(">", "__")
                 .replace(" ", "__");
-            let content = message.get_content().clone();
+            let content = message.take_content().unwrap();
             let response = nats_client.request(subject, content).await?;
             message.respond(response.payload).await?;
 
@@ -176,12 +176,12 @@ where
 {
     fn request(
         &self,
-        request: Self::Message,
+        mut request: Self::Message,
     ) -> impl Future<Output = async_pub_sub::Result<<Self::Message as async_pub_sub::Request>::Response>>
     {
         let nats_client = self.nats_client.clone();
         async move {
-            let content = request.get_content().clone();
+            let content = request.take_content().unwrap();
             let subject = std::any::type_name::<T>()
                 .replace("<", "__")
                 .replace(">", "__")

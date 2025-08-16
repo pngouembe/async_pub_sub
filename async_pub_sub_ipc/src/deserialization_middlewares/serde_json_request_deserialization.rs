@@ -86,7 +86,7 @@ where
 }
 
 pub struct CustomRequest<Req, Rsp> {
-    pub content: Req,
+    pub content: Option<Req>,
     response_callback: Box<dyn FnOnce(Rsp) -> futures::future::BoxFuture<'static, ()> + Send>,
 }
 
@@ -96,16 +96,17 @@ where
 {
     type Content = Req;
     type Response = Rsp;
+    type SentResponse = Rsp;
 
     fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
         todo!()
     }
 
-    fn get_content(&self) -> &Self::Content {
-        &self.content
+    fn take_content(&mut self) -> Option<Self::Content> {
+        self.content.take()
     }
 
-    fn respond(self, response: Self::Response) -> impl futures::Future<Output = Result<()>> {
+    fn respond(self, response: Self::SentResponse) -> impl futures::Future<Output = Result<()>> {
         async move {
             (self.response_callback)(response).await;
             Ok(())

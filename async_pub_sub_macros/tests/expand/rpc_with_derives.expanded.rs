@@ -74,6 +74,7 @@ impl ::core::fmt::Debug for RpcInterfaceResponse {
 impl async_pub_sub::Request for RpcInterfaceMessage {
     type Content = RpcInterfaceMessage;
     type Response = RpcInterfaceResponse;
+    type SentResponse = RpcInterfaceResponse;
     fn take_response(
         self,
     ) -> (
@@ -105,12 +106,12 @@ impl async_pub_sub::Request for RpcInterfaceMessage {
             }
         }
     }
-    fn get_content(&self) -> &Self::Content {
+    fn take_content(&mut self) -> Option<Self::Content> {
         ::core::panicking::panic("not implemented")
     }
     fn respond(
         self,
-        response: Self::Response,
+        response: Self::SentResponse,
     ) -> impl std::future::Future<Output = async_pub_sub::Result<()>> {
         async move {
             match self {
@@ -262,18 +263,20 @@ pub trait RpcInterfaceServer: async_pub_sub::SubscriberWrapper<
             self.handle_request(request).await;
         }
     }
-    async fn handle_request(&mut self, request: RpcInterfaceMessage) {
+    async fn handle_request(&mut self, mut request: RpcInterfaceMessage) {
         match request {
-            RpcInterfaceMessage::AddOne(req) => {
-                let async_pub_sub::RequestImpl { content, response_sender, .. } = req;
+            RpcInterfaceMessage::AddOne(mut req) => {
+                use async_pub_sub::Request;
+                let content = req.take_content().expect("failed to get content");
                 let response = <Self as RpcInterface>::add_one(self, content).await;
-                response_sender.send(response).expect("failed to send response");
+                req.respond(response).await.expect("failed to send response");
             }
-            RpcInterfaceMessage::PrefixWithBar(req) => {
-                let async_pub_sub::RequestImpl { content, response_sender, .. } = req;
+            RpcInterfaceMessage::PrefixWithBar(mut req) => {
+                use async_pub_sub::Request;
+                let content = req.take_content().expect("failed to get content");
                 let response = <Self as RpcInterface>::prefix_with_bar(self, content)
                     .await;
-                response_sender.send(response).expect("failed to send response");
+                req.respond(response).await.expect("failed to send response");
             }
         }
     }

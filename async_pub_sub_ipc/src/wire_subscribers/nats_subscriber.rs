@@ -165,7 +165,7 @@ impl<T> Subscriber for NatsRequestSubscriber<T> {
 }
 
 pub struct NatsRequest {
-    content: Bytes,
+    content: Option<Bytes>,
     response: Box<dyn FnOnce(Bytes) -> BoxFuture<'static, ()> + Send>,
 }
 
@@ -182,26 +182,30 @@ impl NatsRequest {
             }
             .boxed()
         });
-        Ok(Self { content, response })
+        Ok(Self {
+            content: Some(content),
+            response,
+        })
     }
 }
 
 impl Request for NatsRequest {
     type Content = Bytes;
     type Response = Bytes;
+    type SentResponse = Bytes;
 
     fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
         panic!("NatsRequest does not support take_response");
     }
 
-    fn respond(self, response: Self::Response) -> impl Future<Output = Result<()>> {
+    fn respond(self, response: Self::SentResponse) -> impl Future<Output = Result<()>> {
         async move {
             (self.response)(response).await;
             Ok(())
         }
     }
 
-    fn get_content(&self) -> &Self::Content {
-        &self.content
+    fn take_content(&mut self) -> Option<Self::Content> {
+        self.content.take()
     }
 }

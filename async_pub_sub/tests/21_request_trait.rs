@@ -21,7 +21,7 @@ async fn test_custom_requests_publisher() -> Result<()> {
 
     let subscriber_task = tokio::spawn(async move {
         let request = subscriber.receive().await;
-        let response = request.content + 1;
+        let response = request.content.unwrap() + 1;
 
         request
             .respond(response)

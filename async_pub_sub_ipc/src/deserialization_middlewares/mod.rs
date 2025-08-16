@@ -1,5 +1,7 @@
 mod serde_json_deserialization;
 mod serde_json_request_deserialization;
+mod serde_request_deserialization;
 
 pub use serde_json_deserialization::SerdeJsonDeserializationLayer;
 pub use serde_json_request_deserialization::SerdeJsonRequestDeserializationLayer;
+pub use serde_request_deserialization::SerdeRequestDeserializationLayer;

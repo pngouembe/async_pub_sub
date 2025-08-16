@@ -1,14 +1,14 @@
 use async_pub_sub::{PublisherImpl, Request, Result, SubscriberImpl};
 
 struct CustomRequest<Req, Rsp> {
-    content: Req,
+    content: Option<Req>,
     response_callback: Box<dyn FnOnce(Rsp) + Send + Sync>,
 }
 
 impl<Req, Rsp> CustomRequest<Req, Rsp> {
     fn new(content: Req, response_callback: impl FnOnce(Rsp) + Send + Sync + 'static) -> Self {
         Self {
-            content,
+            content: Some(content),
             response_callback: Box::new(response_callback),
         }
     }
@@ -17,6 +17,7 @@ impl<Req, Rsp> CustomRequest<Req, Rsp> {
 impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
     type Content = Req;
     type Response = Rsp;
+    type SentResponse = Rsp;
 
     fn take_response(
         self,
@@ -27,11 +28,11 @@ impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
         todo!()
     }
 
-    fn get_content(&self) -> &Self::Content {
-        &self.content
+    fn take_content(&mut self) -> Option<Self::Content> {
+        self.content.take()
     }
 
-    fn respond(self, response: Self::Response) -> impl Future<Output = Result<()>> {
+    fn respond(self, response: Self::SentResponse) -> impl Future<Output = Result<()>> {
         async move {
             (self.response_callback)(response);
             Ok(())
@@ -65,7 +66,7 @@ async fn test_custom_requests_publisher() -> Result<()> {
 
     let subscriber_task = tokio::spawn(async move {
         let request = subscriber.receive().await;
-        let response = request.content + 1;
+        let response = request.content.unwrap() + 1;
 
         request
             .respond(response)

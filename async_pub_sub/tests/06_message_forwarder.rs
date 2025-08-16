@@ -113,7 +113,7 @@ async fn test_message_forwarder() -> Result<()> {
 
     let subscriber_task = tokio::spawn(async move {
         let request = subscriber.receive().await;
-        let response = request.content + 1;
+        let response = request.content.unwrap() + 1;
 
         request.respond(response).await.unwrap();
     });

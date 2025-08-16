@@ -11,10 +11,9 @@ pub use wire_subscribers::{NatsRequest, NatsRequestSubscriber, NatsSubscriber};
 
 pub use deserialization_middlewares::{
     SerdeJsonDeserializationLayer, SerdeJsonRequestDeserializationLayer,
+    SerdeRequestDeserializationLayer,
 };
-pub use serialization_middlewares::{
-    SerdeJsonRequestSerializationLayer, SerdeJsonSerializationLayer, SerdeRequestSerializationLayer,
-};
+pub use serialization_middlewares::{SerdeJsonSerializationLayer, SerdeRequestSerializationLayer};
 
 pub use error::{Error, Result};
 

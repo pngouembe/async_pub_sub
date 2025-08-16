@@ -20,7 +20,6 @@ services:
       - nats
     networks:
       - app-network
-    restart: unless-stopped
 
   app2:
     build:
@@ -34,7 +33,6 @@ services:
       - nats
     networks:
       - app-network
-    restart: unless-stopped
 
 networks:
   app-network:

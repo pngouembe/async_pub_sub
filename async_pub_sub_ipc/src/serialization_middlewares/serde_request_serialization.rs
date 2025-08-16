@@ -7,14 +7,14 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, Stream};
 
 pub struct SerdeRequestSerializationLayer<Req, Rsp> {
-    serialization_function: Box<dyn Fn(&Req) -> Result<Bytes> + Send + Sync>,
-    deserialization_function: Box<dyn Fn(&Bytes) -> Result<Rsp> + Send + Sync>,
+    serialization_function: Box<dyn Fn(Req) -> Result<Bytes> + Send + Sync>,
+    deserialization_function: Box<dyn Fn(Bytes) -> Result<Rsp> + Send + Sync>,
 }
 
 impl<Req, Rsp> SerdeRequestSerializationLayer<Req, Rsp> {
     pub fn new(
-        serialization_function: impl Fn(&Req) -> Result<Bytes> + Send + Sync + 'static,
-        deserialization_function: impl Fn(&Bytes) -> Result<Rsp> + Send + Sync + 'static,
+        serialization_function: impl Fn(Req) -> Result<Bytes> + Send + Sync + 'static,
+        deserialization_function: impl Fn(Bytes) -> Result<Rsp> + Send + Sync + 'static,
     ) -> Self {
         let serialization_function = Box::new(serialization_function);
         let deserialization_function = Box::new(deserialization_function);
@@ -38,8 +38,8 @@ impl<Req, Rsp, P> Layer<P> for SerdeRequestSerializationLayer<Req, Rsp> {
 }
 
 pub struct SerdeRequestSerializationPublisher<Req, Rsp, P> {
-    serialization_function: Box<dyn Fn(&Req) -> Result<Bytes> + Send + Sync>,
-    deserialization_function: Box<dyn Fn(&Bytes) -> Result<Rsp> + Send + Sync>,
+    serialization_function: Box<dyn Fn(Req) -> Result<Bytes> + Send + Sync>,
+    deserialization_function: Box<dyn Fn(Bytes) -> Result<Rsp> + Send + Sync>,
     publisher: P,
 }
 
@@ -55,15 +55,15 @@ where
         self.publisher.get_name()
     }
 
-    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, mut message: Self::Message) -> BoxFuture<Result<()>> {
         async move {
-            let content = message.get_content();
-            let serialized_content = (self.serialization_function)(&content)?;
+            let content = message.take_content().unwrap();
+            let serialized_content = (self.serialization_function)(content)?;
             let (request, response) = RequestImpl::new(serialized_content).take_response();
             self.publisher.publish(request).await?;
             let response = response.await?;
 
-            let deserialized_response = (self.deserialization_function)(&response)?;
+            let deserialized_response = (self.deserialization_function)(response)?;
 
             message.respond(deserialized_response).await?;
 
@@ -88,16 +88,16 @@ where
 {
     fn request(
         &self,
-        request: Self::Message,
+        mut request: Self::Message,
     ) -> impl Future<Output = Result<<Self::Message as Request>::Response>> {
-        let serialized_content = (self.serialization_function)(request.get_content());
+        let serialized_content = (self.serialization_function)(request.take_content().unwrap());
 
         async move {
             let inner_request = RequestImpl::new(serialized_content?);
 
             let response = self.publisher.request(inner_request).await?;
 
-            let deserialized_response = (self.deserialization_function)(&response)?;
+            let deserialized_response = (self.deserialization_function)(response)?;
             Ok(deserialized_response)
         }
     }

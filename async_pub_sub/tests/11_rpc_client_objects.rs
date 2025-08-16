@@ -59,11 +59,12 @@ async fn test_rpc_client_layer() -> async_pub_sub::Result<()> {
         loop {
             match subscriber.receive().await {
                 Functions::AddOne(req) => {
-                    let response = req.content + 1;
+                    let response = req.content.unwrap() + 1;
                     req.respond(response).await.unwrap();
                 }
-                Functions::PrefixWithBar(req) => {
-                    let response = format!("bar{}", req.content);
+                Functions::PrefixWithBar(mut req) => {
+                    let content = req.take_content().unwrap();
+                    let response = format!("bar{}", content);
                     req.respond(response).await.unwrap();
                 }
             }

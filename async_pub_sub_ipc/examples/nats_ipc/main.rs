@@ -3,10 +3,11 @@ use async_pub_sub::{
     SubscriberBuilder,
 };
 use async_pub_sub_ipc::{
-    NatsPublisher, NatsRequestPublisher, NatsSubscriber, SerdeJsonDeserializationLayer,
-    SerdeJsonRequestDeserializationLayer, SerdeJsonSerializationLayer,
-    SerdeRequestSerializationLayer,
+    NatsPublisher, NatsRequestPublisher, NatsRequestSubscriber, NatsSubscriber,
+    SerdeJsonDeserializationLayer, SerdeJsonRequestDeserializationLayer,
+    SerdeJsonSerializationLayer, SerdeRequestDeserializationLayer, SerdeRequestSerializationLayer,
 };
+use async_pub_sub_macros::{DeriveSubscriber, rpc_interface};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -15,6 +16,31 @@ use std::env;
 pub enum Message {
     Hello,
     World,
+}
+
+// The RPC interface generates PingContent and PingResponse which are used in rpc_macros_task
+// The PingMessage enum contains RequestImpl which can't be serialized, but that's not needed
+// for the rpc_macros_task use case
+#[rpc_interface(Serialize, Deserialize, Debug)]
+trait Ping {
+    async fn ping(&self, message: String);
+}
+
+#[derive(DeriveSubscriber)]
+struct NatsServer<S: Subscriber> {
+    subscriber: S,
+}
+
+impl<S: Subscriber> NatsServer<S> {
+    pub fn new(subscriber: S) -> Self {
+        Self { subscriber }
+    }
+}
+
+impl<S: Subscriber> Ping for NatsServer<S> {
+    async fn ping(&self, message: String) {
+        log::info!("Pong: {message}")
+    }
 }
 
 #[tokio::main]
@@ -29,7 +55,8 @@ async fn main() -> Result<()> {
 
     let _ = tokio::join!(
         pub_sub_task(app_name, &nats_url, send_first),
-        rpc_task(app_name, &nats_url, send_first)
+        rpc_task(app_name, &nats_url, send_first),
+        rpc_macros_task(app_name, &nats_url, send_first),
     );
 
     Ok(())
@@ -73,11 +100,11 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
     let request_publisher = PublisherBuilder::new()
         .layer(SerdeRequestSerializationLayer::<String, String>::new(
             |msg| {
-                serde_json::to_vec(msg)
+                serde_json::to_vec(&msg)
                     .map(Bytes::from)
                     .map_err(Error::from)
             },
-            |bytes| serde_json::from_slice(bytes).map_err(Error::from),
+            |bytes| serde_json::from_slice(&bytes).map_err(Error::from),
         ))
         .publisher(
             NatsRequestPublisher::<RequestImpl<Bytes, Bytes>>::new(
@@ -111,12 +138,73 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
     } else {
         loop {
             log::info!("[{app_name}-rpc] Waiting for requests...");
-            let request = request_subscriber.receive().await;
-            log::info!("[{app_name}-rpc] Received request: {}", request.content);
+            let mut request = request_subscriber.receive().await;
+            let content = request.take_content().unwrap();
+            log::info!("[{app_name}-rpc] Received request: {}", &content);
 
-            let response = format!("{} Response to: {}", app_name, request.content);
+            let response = format!("{} Response to: {}", app_name, &content);
             log::info!("[{app_name}-rpc] Sending response: {}", response);
             request.respond(response).await?;
         }
     }
+}
+
+async fn rpc_macros_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()> {
+    let mut request_counter = 0;
+
+    if send_first {
+        let serialization_function = |content: PingContent| {
+            serde_json::to_vec(&content)
+                .map(Bytes::from)
+                .map_err(Error::from)
+        };
+        let deserialization_function =
+            |bytes: Bytes| serde_json::from_slice(&bytes).map_err(Error::from);
+
+        let publisher = PublisherBuilder::new()
+            .layer(SerdeRequestSerializationLayer::new(
+                serialization_function,
+                deserialization_function,
+            ))
+            .publisher(
+                NatsRequestPublisher::<PingMessage>::new("NatsRequestPublisher", nats_url).await?,
+            );
+
+        let ping_client = PingClient::new(publisher);
+
+        log::info!("[{app_name}] Waiting for server to start");
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+        loop {
+            log::info!("[{app_name}] Sending ping with: {}", request_counter);
+            ping_client.ping(request_counter.to_string()).await;
+            request_counter += 1;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    } else {
+        let deserialization_function =
+            |bytes: Bytes| serde_json::from_slice(&bytes).map_err(Error::from);
+        let serialization_function = |response: PingResponse| {
+            serde_json::to_vec(&response)
+                .map(Bytes::from)
+                .map_err(Error::from)
+        };
+
+        let subscriber = SubscriberBuilder::new()
+            .layer(
+                SerdeRequestDeserializationLayer::<PingContent, PingResponse>::new(
+                    deserialization_function,
+                    serialization_function,
+                ),
+            )
+            .subscriber(
+                NatsRequestSubscriber::<PingMessage>::new("NatsRequestSubscriber", &nats_url)
+                    .await?,
+            );
+        let mut server = NatsServer::new(subscriber);
+
+        server.run().await;
+    }
+
+    Ok(())
 }
