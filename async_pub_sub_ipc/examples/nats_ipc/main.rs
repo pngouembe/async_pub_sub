@@ -1,5 +1,5 @@
 use async_pub_sub::{
-    Error, Publisher, PublisherBuilder, Request, RequestImpl, Requester, Result, Subscriber,
+    Publisher, PublisherBuilder, Request, RequestImpl, Requester, Result, Subscriber,
     SubscriberBuilder,
 };
 use async_pub_sub_ipc::{
@@ -98,14 +98,7 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
     let mut request_counter = 0;
 
     let request_publisher = PublisherBuilder::new()
-        .layer(SerdeRequestSerializationLayer::<String, String>::new(
-            |msg| {
-                serde_json::to_vec(&msg)
-                    .map(Bytes::from)
-                    .map_err(Error::from)
-            },
-            |bytes| serde_json::from_slice(&bytes).map_err(Error::from),
-        ))
+        .layer(SerdeRequestSerializationLayer::<String, String>::serde_json())
         .publisher(
             NatsRequestPublisher::<RequestImpl<Bytes, Bytes>>::new(
                 "NatsRequestPublisher",
@@ -153,19 +146,8 @@ async fn rpc_macros_task(app_name: &str, nats_url: &str, send_first: bool) -> Re
     let mut request_counter = 0;
 
     if send_first {
-        let serialization_function = |content: PingContent| {
-            serde_json::to_vec(&content)
-                .map(Bytes::from)
-                .map_err(Error::from)
-        };
-        let deserialization_function =
-            |bytes: Bytes| serde_json::from_slice(&bytes).map_err(Error::from);
-
         let publisher = PublisherBuilder::new()
-            .layer(SerdeRequestSerializationLayer::new(
-                serialization_function,
-                deserialization_function,
-            ))
+            .layer(SerdeRequestSerializationLayer::serde_json())
             .publisher(
                 NatsRequestPublisher::<PingMessage>::new("NatsRequestPublisher", nats_url).await?,
             );
@@ -182,20 +164,9 @@ async fn rpc_macros_task(app_name: &str, nats_url: &str, send_first: bool) -> Re
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     } else {
-        let deserialization_function =
-            |bytes: Bytes| serde_json::from_slice(&bytes).map_err(Error::from);
-        let serialization_function = |response: PingResponse| {
-            serde_json::to_vec(&response)
-                .map(Bytes::from)
-                .map_err(Error::from)
-        };
-
         let subscriber = SubscriberBuilder::new()
             .layer(
-                SerdeRequestDeserializationLayer::<PingContent, PingResponse>::new(
-                    deserialization_function,
-                    serialization_function,
-                ),
+                SerdeRequestDeserializationLayer::serde_json(),
             )
             .subscriber(
                 NatsRequestSubscriber::<PingMessage>::new("NatsRequestSubscriber", &nats_url)
