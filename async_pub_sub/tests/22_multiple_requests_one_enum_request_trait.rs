@@ -13,6 +13,7 @@ enum RpcRequests {
     Custom(RequestImpl<CustomContent, CustomResponse>),
 }
 
+#[allow(dead_code)]
 enum RpcRequestsContent {
     AddOne(i32),
     Add((i32, i32)),
@@ -24,10 +25,10 @@ impl From<&mut RpcRequests> for Option<RpcRequestsContent> {
         match value {
             RpcRequests::AddOne(req) => req
                 .take_content()
-                .map(|content| RpcRequestsContent::AddOne(content)),
+                .map(RpcRequestsContent::AddOne),
             RpcRequests::Custom(req) => req
                 .take_content()
-                .map(|content| RpcRequestsContent::Custom(content)),
+                .map(RpcRequestsContent::Custom),
             _ => panic!("toto"),
         }
     }
@@ -46,38 +47,35 @@ impl Request for RpcRequests {
     type SentResponse = RpcRequestsResponses;
 
     fn take_response(
-        self,
-    ) -> (
-        Self,
-        futures::future::BoxFuture<'static, Result<Self::Response>>,
-    ) {
+        &mut self,
+    ) -> Option<futures::future::BoxFuture<'static, Result<Self::Response>>> {
         match self {
             RpcRequests::AddOne(request) => {
-                let (request, response_future) = request.take_response();
+                let response_future = request.take_response().unwrap();
                 let response_future = async move {
                     let response = response_future.await?;
                     Ok(RpcRequestsResponses::AddOne(response))
                 }
                 .boxed();
-                (RpcRequests::AddOne(request), response_future)
+                Some(response_future)
             }
             RpcRequests::Add(request) => {
-                let (request, response_future) = request.take_response();
+                let response_future = request.take_response().unwrap();
                 let response_future = async move {
                     let response = response_future.await?;
                     Ok(RpcRequestsResponses::Add(response))
                 }
                 .boxed();
-                (RpcRequests::Add(request), response_future)
+                Some(response_future)
             }
             RpcRequests::Custom(request) => {
-                let (request, response_future) = request.take_response();
+                let response_future = request.take_response().unwrap();
                 let response_future = async move {
                     let response = response_future.await?;
                     Ok(RpcRequestsResponses::Custom(response))
                 }
                 .boxed();
-                (RpcRequests::Custom(request), response_future)
+                Some(response_future)
             }
         }
     }
@@ -86,27 +84,25 @@ impl Request for RpcRequests {
         self.into()
     }
 
-    fn respond(self, response: Self::SentResponse) -> impl Future<Output = Result<()>> {
-        async move {
-            match self {
-                RpcRequests::AddOne(request) => {
-                    let RpcRequestsResponses::AddOne(response) = response else {
-                        panic!("Expected AddOne response");
-                    };
-                    request.respond(response).await
-                }
-                RpcRequests::Add(request) => {
-                    let RpcRequestsResponses::Add(response) = response else {
-                        panic!("Expected Add response");
-                    };
-                    request.respond(response).await
-                }
-                RpcRequests::Custom(request) => {
-                    let RpcRequestsResponses::Custom(response) = response else {
-                        panic!("Expected Add response");
-                    };
-                    request.respond(response).await
-                }
+    async fn respond(self, response: Self::SentResponse) -> Result<()> {
+        match self {
+            RpcRequests::AddOne(request) => {
+                let RpcRequestsResponses::AddOne(response) = response else {
+                    panic!("Expected AddOne response");
+                };
+                request.respond(response).await
+            }
+            RpcRequests::Add(request) => {
+                let RpcRequestsResponses::Add(response) = response else {
+                    panic!("Expected Add response");
+                };
+                request.respond(response).await
+            }
+            RpcRequests::Custom(request) => {
+                let RpcRequestsResponses::Custom(response) = response else {
+                    panic!("Expected Add response");
+                };
+                request.respond(response).await
             }
         }
     }

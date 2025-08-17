@@ -20,22 +20,20 @@ impl MyComponent {
     fn init(&mut self) {
         Ok(())
             .and_then(|_| {
-                async_pub_sub::SubscriberWrapper::<
-                    _,
-                >::subscribe_to(
+                async_pub_sub::SubscriberWrapper::subscribe_to(
                     &mut self.subscriber,
-                    async_pub_sub::PublisherWrapper::<
-                        _,
-                    >::get_publisher_mut(&mut self.publisher1),
+                    &mut self.publisher1,
                 )
             })
             .and_then(|_| {
                 async_pub_sub::SubscriberWrapper::<
                     i32,
+                    _,
                 >::subscribe_to(
                     &mut self.subscriber,
                     async_pub_sub::PublisherWrapper::<
                         _,
+                        i32,
                     >::get_publisher_mut(&mut self.publisher2),
                 )
             })
@@ -48,35 +46,36 @@ fn main() {
     let mut publisher_c = PublisherImpl::<i32>::new("publisher_c", 1);
     let mut publisher_d = PublisherImpl::<i32>::new("publisher_d", 1);
     let mut subscriber = SubscriberImpl::<i32>::new("subscriber");
-    async_pub_sub::SubscriberWrapper::<
-        _,
-    >::subscribe_to(
-            &mut subscriber,
-            async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut publisher_a),
-        )
+    async_pub_sub::SubscriberWrapper::subscribe_to(&mut subscriber, &mut publisher_a)
         .unwrap();
     async_pub_sub::SubscriberWrapper::<
         i32,
+        _,
     >::subscribe_to(
             &mut subscriber,
-            async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut publisher_b),
+            async_pub_sub::PublisherWrapper::<
+                _,
+                i32,
+            >::get_publisher_mut(&mut publisher_b),
         )
         .unwrap();
     Ok(())
         .and_then(|_| {
-            async_pub_sub::SubscriberWrapper::<
-                _,
-            >::subscribe_to(
+            async_pub_sub::SubscriberWrapper::subscribe_to(
                 &mut subscriber,
-                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut publisher_c),
+                &mut publisher_c,
             )
         })
         .and_then(|_| {
             async_pub_sub::SubscriberWrapper::<
                 i32,
+                _,
             >::subscribe_to(
                 &mut subscriber,
-                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut publisher_d),
+                async_pub_sub::PublisherWrapper::<
+                    _,
+                    i32,
+                >::get_publisher_mut(&mut publisher_d),
             )
         })
         .unwrap();

@@ -1,7 +1,7 @@
 use std::{fmt::Debug, pin::Pin};
 
 use async_pub_sub::{Publisher, PublisherImpl, Result, SubscriberImpl};
-use futures::{future::BoxFuture, FutureExt, Stream};
+use futures::{FutureExt, Stream, future::BoxFuture};
 
 struct LoggingPublisher<P> {
     subscriber_name: Option<&'static str>,
@@ -21,13 +21,14 @@ impl<Message> Publisher for LoggingPublisher<PublisherImpl<Message>>
 where
     Message: Debug + Send + Sync + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }
 
-    fn publish(&self, message: Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Message) -> BoxFuture<'_, Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
             let result = self.publisher.publish(message).await;

@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use crate::{Publisher, Result, Subscriber, SubscriberImpl};
+use crate::{Publisher, PublisherWrapper, Result, Subscriber, SubscriberImpl};
 use futures::{FutureExt, Stream, future::BoxFuture, stream};
 
 use super::Forwarder;
@@ -45,7 +45,8 @@ impl<Message> Subscriber for ForwarderImpl<Message>
 where
     Message: Send + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     /// Returns the name of this forwarder instance.
     fn get_name(&self) -> &'static str {
@@ -59,7 +60,11 @@ where
     ///
     /// # Returns
     /// * `Result<()>` - Ok if subscription successful, Err with description if failed
-    fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         let Some(subscriber) = self.subscriber.as_mut() else {
             let subscriber_name = self
                 .subscriber_name
@@ -79,7 +84,7 @@ where
     }
 
     /// Not implemented for LoggingForwarder. Will panic if called.
-    fn receive(&mut self) -> BoxFuture<Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Message> {
         panic!("LoggingForwarder does not implement receive method")
     }
 }
@@ -88,7 +93,8 @@ impl<Message> Publisher for ForwarderImpl<Message>
 where
     Message: Send + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     /// Returns the name of this forwarder instance.
     fn get_name(&self) -> &'static str {
@@ -96,7 +102,7 @@ where
     }
 
     /// Not implemented for LoggingForwarder. Will panic if called.
-    fn publish(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, _message: Message) -> futures::future::BoxFuture<'_, Result<()>> {
         async move { panic!("LoggingForwarder does not implement publish method") }.boxed()
     }
 

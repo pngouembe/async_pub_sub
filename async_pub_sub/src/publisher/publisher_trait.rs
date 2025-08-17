@@ -1,6 +1,6 @@
-use std::pin::Pin;
-use std::ops::{Deref, DerefMut};
 use futures::{Stream, future::BoxFuture};
+use std::ops::{Deref, DerefMut};
+use std::pin::Pin;
 
 use crate::Result;
 
@@ -10,7 +10,12 @@ use crate::Result;
 pub trait Publisher {
     /// The type of messages that this publisher can send.
     /// Must implement Send and have a static lifetime.
-    type Message: Send + 'static;
+    type InputMessage: Send + 'static;
+
+    /// The type of message that the subscriber of this publisher
+    /// will receive.
+    /// Must implement Send and have a static lifetime.
+    type OutputMessage: Send + 'static;
 
     /// Returns the name of the publisher.
     ///
@@ -25,7 +30,7 @@ pub trait Publisher {
     ///
     /// # Returns
     /// A future that resolves to a Result indicating success or failure of the publish operation.
-    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>>;
+    fn publish(&self, message: Self::InputMessage) -> BoxFuture<'_, Result<()>>;
 
     /// Creates a new message stream for a subscriber.
     ///
@@ -37,29 +42,30 @@ pub trait Publisher {
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>>;
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>>;
 }
 
 // Add blanket implementation for types that can be dereferenced into a Publisher
-impl<T> Publisher for T 
-where 
+impl<T> Publisher for T
+where
     T: Deref + DerefMut,
     T::Target: Publisher,
 {
-    type Message = <T::Target as Publisher>::Message;
+    type InputMessage = <T::Target as Publisher>::InputMessage;
+    type OutputMessage = <T::Target as Publisher>::OutputMessage;
 
     fn get_name(&self) -> &'static str {
         self.deref().get_name()
     }
 
-    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Self::InputMessage) -> BoxFuture<'_, Result<()>> {
         self.deref().publish(message)
     }
 
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>> {
         self.deref_mut().get_message_stream(subscriber_name)
     }
 }
@@ -68,21 +74,26 @@ where
 ///
 /// This trait provides a default implementation for publisher operations
 /// by delegating to an internal publisher instance.
-pub trait PublisherWrapper<Message>
+pub trait PublisherWrapper<InputMessage, OutputMessage>
 where
-    Message: Send + 'static,
+    InputMessage: Send + 'static,
+    OutputMessage: Send + 'static,
 {
     /// Gets a reference to the wrapped publisher.
     ///
     /// # Returns
     /// A reference to the wrapped publisher implementation.
-    fn get_publisher(&self) -> &dyn Publisher<Message = Message>;
+    fn get_publisher(
+        &self,
+    ) -> &impl Publisher<InputMessage = InputMessage, OutputMessage = OutputMessage>;
 
     /// Gets a mutable reference to the wrapped publisher.
     ///
     /// # Returns
     /// A mutable reference to the wrapped publisher implementation.
-    fn get_publisher_mut(&mut self) -> &mut dyn Publisher<Message = Message>;
+    fn get_publisher_mut(
+        &mut self,
+    ) -> &mut impl Publisher<InputMessage = InputMessage, OutputMessage = OutputMessage>;
 
     /// Returns the name of the wrapped publisher.
     ///
@@ -99,7 +110,7 @@ where
     ///
     /// # Returns
     /// A future that resolves to a Result indicating success or failure of the publish operation.
-    fn publish(&self, message: Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, message: InputMessage) -> futures::future::BoxFuture<'_, Result<()>> {
         Publisher::publish(self.get_publisher(), message)
     }
 
@@ -113,21 +124,25 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<std::pin::Pin<Box<dyn futures::Stream<Item = Message> + Send + Sync + 'static>>>
+    ) -> Result<std::pin::Pin<Box<dyn futures::Stream<Item = OutputMessage> + Send + Sync + 'static>>>
     {
         Publisher::get_message_stream(self.get_publisher_mut(), subscriber_name)
     }
 }
 
-impl<T> PublisherWrapper<T::Message> for T
+impl<T> PublisherWrapper<T::InputMessage, T::OutputMessage> for T
 where
     T: Publisher,
 {
-    fn get_publisher(&self) -> &dyn Publisher<Message = T::Message> {
+    fn get_publisher(
+        &self,
+    ) -> &impl Publisher<InputMessage = T::InputMessage, OutputMessage = T::OutputMessage> {
         self
     }
 
-    fn get_publisher_mut(&mut self) -> &mut dyn Publisher<Message = T::Message> {
+    fn get_publisher_mut(
+        &mut self,
+    ) -> &mut impl Publisher<InputMessage = T::InputMessage, OutputMessage = T::OutputMessage> {
         self
     }
 }

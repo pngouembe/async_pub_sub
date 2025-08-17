@@ -1,16 +1,17 @@
-use async_pub_sub::{Publisher, PublisherImpl, Subscriber, SubscriberImpl, macros::routes};
+use async_pub_sub::{Publisher, PublisherImpl, SubscriberImpl, macros::routes};
 
 struct MyService {
-    publisher1: Box<dyn Publisher<Message = String> + Send + Sync>,
-    publisher2: Box<dyn Publisher<Message = String> + Send + Sync>,
-    subscriber: Box<dyn Subscriber<Message = String> + Send + Sync>,
+    publisher1: Box<dyn Publisher<InputMessage = String, OutputMessage = String> + Send + Sync>,
+    publisher2: Box<dyn Publisher<InputMessage = String, OutputMessage = String> + Send + Sync>,
+    // TODO: find a way to make the subscriber trait dyn compatible
+    subscriber: SubscriberImpl<String>,
 }
 
 impl MyService {
     fn new() -> Self {
         let publisher1 = Box::new(PublisherImpl::<String>::new("my_service", 1));
         let publisher2 = Box::new(PublisherImpl::<String>::new("my_service", 1));
-        let subscriber = Box::new(SubscriberImpl::<String>::new("my_service"));
+        let subscriber = SubscriberImpl::<String>::new("my_service");
         Self {
             publisher1,
             publisher2,

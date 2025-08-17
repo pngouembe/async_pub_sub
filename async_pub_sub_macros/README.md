@@ -42,7 +42,7 @@ struct MyPublisher {
 #[derive(DeriveSubscriber)]
 struct MySubscriber<S> 
 where 
-    S: Subscriber<Message = i32>
+    S: Subscriber<InputMessage = i32, OutputMessage = i32>
 {
     subscriber: S,
 }

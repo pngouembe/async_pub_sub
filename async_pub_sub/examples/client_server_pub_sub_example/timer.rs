@@ -18,11 +18,23 @@ pub struct CacheTimerNotification;
 #[derive(DerivePublisher)]
 pub struct TimerService {
     #[publisher(DataConsumerTimerNotification)]
-    data_consumer_publisher: Box<dyn Publisher<Message = DataConsumerTimerNotification>>,
+    data_consumer_publisher: Box<
+        dyn Publisher<
+                InputMessage = DataConsumerTimerNotification,
+                OutputMessage = DataConsumerTimerNotification,
+            >,
+    >,
     #[publisher(DataProducerTimerNotification)]
-    data_producer_publisher: Box<dyn Publisher<Message = DataProducerTimerNotification>>,
+    data_producer_publisher: Box<
+        dyn Publisher<
+                InputMessage = DataProducerTimerNotification,
+                OutputMessage = DataProducerTimerNotification,
+            >,
+    >,
     #[publisher(CacheTimerNotification)]
-    cache_publisher: Box<dyn Publisher<Message = CacheTimerNotification>>,
+    cache_publisher: Box<
+        dyn Publisher<InputMessage = CacheTimerNotification, OutputMessage = CacheTimerNotification>,
+    >,
 }
 
 impl TimerService {

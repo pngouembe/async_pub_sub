@@ -1,0 +1,7 @@
+error: DerivePublisher macro only supports structs with named fields.
+
+       Tip: Change your struct to use named fields like `struct MyStruct { field: Type }` instead of tuple structs like `struct MyStruct(Type)`.
+ --> tests/fail/derive_publisher_on_tuple_struct.rs:4:1
+  |
+4 | struct InvalidPublisher(String);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

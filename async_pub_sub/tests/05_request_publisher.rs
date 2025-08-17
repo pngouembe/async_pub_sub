@@ -10,7 +10,8 @@ async fn test_request_publisher() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let (request, response) = RequestImpl::new(42).take_response();
+        let mut request = RequestImpl::new(42);
+        let response = request.take_response().unwrap();
         publisher
             .publish(request)
             .await

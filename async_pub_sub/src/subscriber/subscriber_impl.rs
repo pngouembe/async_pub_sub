@@ -1,4 +1,4 @@
-use crate::{Publisher, Result, Subscriber};
+use crate::{PublisherWrapper, Result, Subscriber};
 use futures::{FutureExt, Stream, StreamExt, future::BoxFuture, stream::SelectAll};
 use std::pin::Pin;
 
@@ -39,7 +39,11 @@ where
     ///
     /// # Returns
     /// A Result indicating success or failure of the subscription
-    pub fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
+    pub fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Message>,
+        Input: Send + 'static,
+    {
         let stream = publisher.get_message_stream(self.name)?;
         self.messages.push(stream);
         Ok(())
@@ -63,20 +67,22 @@ impl<Message> Subscriber for SubscriberImpl<Message>
 where
     Message: Send + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         SubscriberImpl::subscribe_to(self, publisher)
     }
 
-    fn receive(&mut self) -> BoxFuture<Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Message> {
         SubscriberImpl::receive(self).boxed()
     }
 }

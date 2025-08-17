@@ -5,13 +5,14 @@ struct TestPublisherA<P: Publisher> {
     publisher_a: P,
 }
 impl<P: Publisher> async_pub_sub::Publisher for TestPublisherA<P> {
-    type Message = <P as async_pub_sub::Publisher>::Message;
+    type InputMessage = <P as async_pub_sub::Publisher>::InputMessage;
+    type OutputMessage = <P as async_pub_sub::Publisher>::OutputMessage;
     fn get_name(&self) -> &'static str {
         async_pub_sub::Publisher::get_name(&self.publisher_a)
     }
     fn publish(
         &self,
-        message: Self::Message,
+        message: Self::InputMessage,
     ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async_pub_sub::Publisher::publish(&self.publisher_a, message)
     }
@@ -22,7 +23,7 @@ impl<P: Publisher> async_pub_sub::Publisher for TestPublisherA<P> {
         std::pin::Pin<
             Box<
                 dyn async_pub_sub::futures::Stream<
-                    Item = Self::Message,
+                    Item = Self::OutputMessage,
                 > + Send + Sync + 'static,
             >,
         >,
@@ -43,13 +44,14 @@ impl<P> async_pub_sub::Publisher for TestPublisherB<P>
 where
     P: Publisher,
 {
-    type Message = <P as async_pub_sub::Publisher>::Message;
+    type InputMessage = <P as async_pub_sub::Publisher>::InputMessage;
+    type OutputMessage = <P as async_pub_sub::Publisher>::OutputMessage;
     fn get_name(&self) -> &'static str {
         async_pub_sub::Publisher::get_name(&self.publisher_b)
     }
     fn publish(
         &self,
-        message: Self::Message,
+        message: Self::InputMessage,
     ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async_pub_sub::Publisher::publish(&self.publisher_b, message)
     }
@@ -60,7 +62,7 @@ where
         std::pin::Pin<
             Box<
                 dyn async_pub_sub::futures::Stream<
-                    Item = Self::Message,
+                    Item = Self::OutputMessage,
                 > + Send + Sync + 'static,
             >,
         >,

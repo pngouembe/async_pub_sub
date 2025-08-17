@@ -1,7 +1,7 @@
-pub mod request_builder;
-pub mod response_transform_request_layer;
 pub mod logging_request_layer;
+pub mod request_builder;
+pub mod request_map_layer;
 
-pub use request_builder::RequestBuilder;
-pub use response_transform_request_layer::ResponseTransformRequestLayer;
 pub use logging_request_layer::LoggingRequestLayer;
+pub use request_builder::RequestBuilder;
+pub use request_map_layer::MappedRequest;

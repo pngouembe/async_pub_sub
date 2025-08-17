@@ -38,15 +38,12 @@ fn parse_publisher_token_stream(input: ParseStream) -> syn::Result<proc_macro2::
     input.step(|cursor| {
         let mut rest = *cursor;
         while let Some((tt, next)) = rest.token_tree() {
-            if let TokenTree::Punct(punct) = &tt {
-                if punct.as_char() == '-' {
-                    if let Some((TokenTree::Punct(punct), _)) = next.token_tree() {
-                        if punct.as_char() == '>' {
+            if let TokenTree::Punct(punct) = &tt
+                && punct.as_char() == '-'
+                    && let Some((TokenTree::Punct(punct), _)) = next.token_tree()
+                        && punct.as_char() == '>' {
                             return Ok(((), rest));
                         }
-                    }
-                }
-            }
             rest = next;
         }
         Err(cursor.error("Expected '->'"))
@@ -71,16 +68,16 @@ pub(crate) fn generate_route(input: RouteInput) -> TokenStream {
 
     let output = if let Some(message_type) = input.message_type {
         quote! {
-            async_pub_sub::SubscriberWrapper::<#message_type>::subscribe_to(
+            async_pub_sub::SubscriberWrapper::<#message_type, _>::subscribe_to(
                 &mut #subscriber,
-                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut #publisher),
+                async_pub_sub::PublisherWrapper::<_, #message_type>::get_publisher_mut(&mut #publisher),
             )
         }
     } else {
         quote! {
-            async_pub_sub::SubscriberWrapper::<_>::subscribe_to(
+            async_pub_sub::SubscriberWrapper::subscribe_to(
                 &mut #subscriber,
-                async_pub_sub::PublisherWrapper::<_>::get_publisher_mut(&mut #publisher),
+                &mut #publisher,
             )
         }
     };

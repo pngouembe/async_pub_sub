@@ -36,8 +36,16 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
         }
     };
 
-    // Extract derives from parsed attributes and collect to vector for reuse
-    let derives: Vec<_> = attrs.derives.iter().collect();
+    // Extract derives from parsed attributes and ensure Debug is included
+    let mut derive_list: Vec<syn::Ident> = attrs.derives.into_iter().collect();
+
+    // Ensure Debug is always included since RequestImpl requires it
+    let has_debug = derive_list.iter().any(|ident| *ident == "Debug");
+    if !has_debug {
+        derive_list.push(syn::Ident::new("Debug", proc_macro2::Span::call_site()));
+    }
+
+    let derives: Vec<_> = derive_list.iter().collect();
 
     let trait_name = input_trait.ident.clone();
     let message_enum_name = format_ident!("{}Message", trait_name);
@@ -65,12 +73,31 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
     let _enum_variants = generate_enum_variants(&methods); // No longer used since we use type alias
     let response_variants = generate_response_variants(&methods);
     let content_variants = generate_content_variants(&methods);
-    let request_trait_impl =
-        generate_request_trait_impl(&message_enum_name, &response_enum_name, &content_enum_name, &methods);
-    let client_methods = generate_client_methods(&message_enum_name, &response_enum_name, &content_enum_name, &methods);
-    let server_impl = generate_server_impl(&message_enum_name, &content_enum_name, &response_enum_name, &trait_name, &methods);
-    let server_trait_impl =
-        generate_server_trait_impl(&server_trait_name, &content_enum_name, &response_enum_name, &trait_name);
+    let request_trait_impl = generate_request_trait_impl(
+        &message_enum_name,
+        &response_enum_name,
+        &content_enum_name,
+        &methods,
+    );
+    let client_methods = generate_client_methods(
+        &message_enum_name,
+        &response_enum_name,
+        &content_enum_name,
+        &methods,
+    );
+    let server_impl = generate_server_impl(
+        &message_enum_name,
+        &content_enum_name,
+        &response_enum_name,
+        &trait_name,
+        &methods,
+    );
+    let server_trait_impl = generate_server_trait_impl(
+        &server_trait_name,
+        &content_enum_name,
+        &response_enum_name,
+        &trait_name,
+    );
 
     let expanded = quote! {
         #[allow(async_fn_in_trait)]
@@ -92,33 +119,59 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
 
         #request_trait_impl
 
-        #[derive(async_pub_sub::macros::DerivePublisher)]
-        pub struct #client_name
+        pub struct #client_name<OutputMessage = #message_enum_name>
+        where
+            OutputMessage: Send + 'static,
         {
-            #[publisher(#message_enum_name)]
-            pub publisher: Box<dyn async_pub_sub::Publisher<Message = #message_enum_name>  + Send>,
+            pub publisher: Box<dyn async_pub_sub::Publisher<InputMessage = #message_enum_name, OutputMessage = OutputMessage>  + Send>,
         }
 
-        impl #client_name
+        impl<OutputMessage> async_pub_sub::Publisher for #client_name<OutputMessage>
+        where
+            OutputMessage: Send + 'static,
+        {
+            type InputMessage = #message_enum_name;
+            type OutputMessage = OutputMessage;
+
+            fn get_name(&self) -> &'static str {
+                async_pub_sub::Publisher::get_name(&self.publisher)
+            }
+
+            fn publish(&self, message: Self::InputMessage) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
+                async_pub_sub::Publisher::publish(&self.publisher, message)
+            }
+
+            fn get_message_stream(
+                &mut self,
+                subscriber_name: &'static str,
+            ) -> async_pub_sub::Result<std::pin::Pin<Box<dyn async_pub_sub::futures::Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>> {
+                async_pub_sub::Publisher::get_message_stream(&mut self.publisher, subscriber_name)
+            }
+        }
+
+        impl<OutputMessage> #client_name<OutputMessage>
+        where
+            OutputMessage: Send + 'static,
         {
             pub fn new<P>(publisher: P ) -> Self
             where
-                P: async_pub_sub::Publisher<Message = #message_enum_name> + Send + 'static,
+                P: async_pub_sub::Publisher<InputMessage = #message_enum_name, OutputMessage = OutputMessage> + Send + 'static,
             {
                 Self { publisher: Box::new(publisher) }
             }
         }
 
-        impl async_pub_sub::Requester for #client_name
+        impl<OutputMessage> async_pub_sub::Requester for #client_name<OutputMessage>
         where
+            OutputMessage: Send + 'static,
             #message_enum_name: async_pub_sub::Request,
         {
             fn request(
                 &self,
-                request: Self::Message,
-            ) -> impl std::future::Future<Output = async_pub_sub::Result<<Self::Message as async_pub_sub::Request>::Response>> {
+                mut request: Self::InputMessage,
+            ) -> impl std::future::Future<Output = async_pub_sub::Result<<Self::InputMessage as async_pub_sub::Request>::Response>> {
                 use async_pub_sub::Request;
-                let (request, response) = request.take_response();
+                let response = request.take_response().expect("failed to get response future");
                 let publication_future = self.publisher.publish(request);
                 async move {
                     publication_future.await?;
@@ -127,13 +180,18 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
             }
         }
 
-        impl #trait_name for #client_name {
+        impl<OutputMessage> #trait_name for #client_name<OutputMessage>
+        where
+            OutputMessage: Send + 'static,
+        {
             #(#client_methods)*
         }
 
-        pub trait #server_trait_name: #trait_name + async_pub_sub::Subscriber
+        pub trait #server_trait_name<Input, Output>: #trait_name + async_pub_sub::SubscriberWrapper<Input, Output>
         where
-            Self::Message: async_pub_sub::Request<Content = #content_enum_name, Response = #response_enum_name, SentResponse = #response_enum_name>,
+            Input: Send + 'static,
+            Output: async_pub_sub::Request<Content = #content_enum_name, SentResponse = #response_enum_name> + Send + 'static,
+            Output::Response: Send,
         {
             async fn run(&mut self) {
                 loop {
@@ -142,7 +200,7 @@ pub(crate) fn generate_rpc_interface(attr: TokenStream, input: Item) -> TokenStr
                 }
             }
 
-            async fn handle_request(&mut self, mut req: Self::Message) {
+            async fn handle_request(&mut self, mut req: Output) {
                 use async_pub_sub::Request;
                 let content = req.take_content().expect("failed to get content");
                 match content {
@@ -164,8 +222,8 @@ fn validate_method_signatures(methods: &[&syn::TraitItemFn]) -> syn::Result<()> 
 
         // Check inputs for references
         for arg in &method.sig.inputs {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if let syn::Type::Reference(ty) = &*pat_type.ty {
+            if let syn::FnArg::Typed(pat_type) = arg
+                && let syn::Type::Reference(ty) = &*pat_type.ty {
                     let arg_name = &pat_type.pat;
                     return Err(syn::Error::new_spanned(
                         &*pat_type.ty,
@@ -177,12 +235,11 @@ fn validate_method_signatures(methods: &[&syn::TraitItemFn]) -> syn::Result<()> 
                         ),
                     ));
                 }
-            }
         }
 
         // Check output for references
-        if let syn::ReturnType::Type(_, ty) = &method.sig.output {
-            if let syn::Type::Reference(ref_ty) = &**ty {
+        if let syn::ReturnType::Type(_, ty) = &method.sig.output
+            && let syn::Type::Reference(ref_ty) = &**ty {
                 return Err(syn::Error::new_spanned(
                     &**ty,
                     format!(
@@ -192,7 +249,6 @@ fn validate_method_signatures(methods: &[&syn::TraitItemFn]) -> syn::Result<()> 
                     ),
                 ));
             }
-        }
     }
     Ok(())
 }
@@ -253,7 +309,7 @@ fn generate_client_methods<'a>(
         };
 
         let function_signature =
-            quote! { #name(#args) -> async_pub_sub::futures::future::BoxFuture<#output_type> };
+            quote! { #name(#args) -> async_pub_sub::futures::future::BoxFuture<'_, #output_type> };
 
         let request_content: Vec<_> = args
             .iter()
@@ -396,7 +452,7 @@ fn generate_request_trait_impl(
     _content_enum_name: &syn::Ident,
     _methods: &[&syn::TraitItemFn],
 ) -> proc_macro2::TokenStream {
-    // Since PingMessage is now RequestImpl<PingContent, PingResponse>, 
+    // Since PingMessage is now RequestImpl<PingContent, PingResponse>,
     // we don't need to implement Request for it - RequestImpl already does that
     // We just need to provide conversion utilities if needed
     quote! {
@@ -411,9 +467,11 @@ fn generate_server_trait_impl(
     trait_name: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     quote! {
-        impl<T> #server_trait_name for T where
-            T: #trait_name + async_pub_sub::Subscriber,
-            T::Message: async_pub_sub::Request<Content = #content_enum_name, Response = #response_enum_name, SentResponse = #response_enum_name> + Send + 'static,
+        impl<Input, Output,T> #server_trait_name<Input, Output> for T where
+            T: #trait_name + async_pub_sub::SubscriberWrapper<Input, Output>,
+            Input: Send + 'static,
+            Output: async_pub_sub::Request<Content = #content_enum_name, SentResponse = #response_enum_name> + Send + 'static,
+            Output::Response: Send,
         {
         }
     }

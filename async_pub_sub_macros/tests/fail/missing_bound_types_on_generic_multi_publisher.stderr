@@ -1,0 +1,32 @@
+error: Multiple generic publishers detected without explicit message type constraints, which would create conflicting trait implementations.
+
+       Tip: When using multiple generic publishers, you must specify explicit message types to avoid conflicts:
+
+       Instead of:
+         struct MyStruct<A, B>
+         where
+             A: Publisher,
+             B: Publisher,
+
+       Use one of these approaches:
+         1. Explicit message type constraints:
+            struct MyStruct<A, B>
+            where
+                A: Publisher<InputMessage = i32, OutputMessage = String>,
+                B: Publisher<InputMessage = bool, OutputMessage = f64>,
+
+         2. Use #[publisher] attributes with explicit types:
+            struct MyStruct {
+                #[publisher(i32, String)] field_a: A,
+                #[publisher(bool, f64)] field_b: B,
+            }
+  --> tests/fail/missing_bound_types_on_generic_multi_publisher.rs:6:1
+   |
+6  | / struct TestPublisher<PubA, PubB>
+7  | | where
+8  | |     PubA: Publisher,
+9  | |     PubB: Publisher,
+...  |
+12 | |     publisher_b: PubB,
+13 | | }
+   | |_^

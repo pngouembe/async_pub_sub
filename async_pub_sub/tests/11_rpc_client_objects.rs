@@ -11,21 +11,23 @@ struct RpcClient<P> {
 
 impl<P> RpcClient<P>
 where
-    P: Publisher<Message = Functions>,
+    P: Publisher<InputMessage = Functions>,
 {
     pub fn new(publisher: P) -> Self {
         Self { publisher }
     }
 
     pub async fn add_one(&self, value: i32) -> Result<i32> {
-        let (request, response) = RequestImpl::<i32, i32>::new(value).take_response();
+        let mut request = RequestImpl::new(value);
+        let response = request.take_response().unwrap();
         self.publisher.publish(Functions::AddOne(request)).await?;
         let response = response.await?;
         Ok(response)
     }
 
     pub async fn prefix_with_bar(&self, string: String) -> Result<String> {
-        let (request, response) = RequestImpl::<String, String>::new(string).take_response();
+        let mut request = RequestImpl::new(string);
+        let response = request.take_response().unwrap();
         self.publisher
             .publish(Functions::PrefixWithBar(request))
             .await?;

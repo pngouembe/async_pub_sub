@@ -1,4 +1,10 @@
-error: DerivePublisher macro requires that your struct must have at least one field that implements the Publisher trait or is marked with #[publisher]
+error: DerivePublisher macro requires that your struct must have at least one field that implements the Publisher trait or is marked with #[publisher].
+
+       Tip: You can either:
+         1. Add a field with type that implements Publisher: `field: SomePublisher`
+         2. Add #[publisher] attribute to a field: `#[publisher(MessageType)] field: SomeType`
+         3. Add #[publisher] attribute with input/output types: `#[publisher(InputType, OutputType)] field: SomeType`
+         4. Use generic constraints: `struct MyStruct<P: Publisher<InputMessage = i32, OutputMessage = String>>`
  --> tests/fail/missing_publisher.rs:4:1
   |
 4 | / struct InvalidPublisher {

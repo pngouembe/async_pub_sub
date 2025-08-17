@@ -1,4 +1,6 @@
-error: DeriveSubscriber macro only supports structs
+error: DeriveSubscriber macro only supports structs.
+
+       Tip: The macro can only be applied to struct definitions, not enums, unions, or other types. Use `struct MyStruct { ... }` instead.
  --> tests/fail/derive_subscriber_on_enum.rs:4:1
   |
 4 | / enum InvalidSubscriber {

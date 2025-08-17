@@ -4,7 +4,7 @@ use async_pub_sub::{Publisher, PublisherImpl, Result, SubscriberImpl};
 async fn test_pub_sub_i32() -> Result<()> {
     // -- Setup & Fixtures
     let mut subscriber = SubscriberImpl::new("subscriber");
-    let mut publisher: Box<dyn Publisher<Message = i32>> =
+    let mut publisher: Box<dyn Publisher<InputMessage = i32, OutputMessage = i32>> =
         Box::new(PublisherImpl::new("publisher", 10));
 
     subscriber.subscribe_to(&mut publisher)?;

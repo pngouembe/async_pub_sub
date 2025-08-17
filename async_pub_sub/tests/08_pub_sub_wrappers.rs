@@ -2,7 +2,9 @@
 
 use std::pin::Pin;
 
-use async_pub_sub::{Publisher, PublisherImpl, Result, Subscriber, SubscriberImpl};
+use async_pub_sub::{
+    Publisher, PublisherImpl, PublisherWrapper, Result, Subscriber, SubscriberImpl,
+};
 use futures::{FutureExt, Stream, future::BoxFuture};
 
 struct Service {
@@ -30,32 +32,35 @@ impl Service {
 }
 
 impl Subscriber for Service {
-    type Message = i32;
+    type InputMessage = i32;
+    type OutputMessage = i32;
 
     fn get_name(&self) -> &'static str {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         self.subscriber.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> BoxFuture<Self::Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Self::InputMessage> {
         self.subscriber.receive().boxed()
     }
 }
 
 impl Publisher for Service {
-    type Message = String;
+    type InputMessage = String;
+    type OutputMessage = String;
 
     fn get_name(&self) -> &'static str {
         Publisher::get_name(&self.publisher)
     }
 
-    fn publish(&self, message: String) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, message: String) -> futures::future::BoxFuture<'_, Result<()>> {
         Publisher::publish(&self.publisher, message)
     }
 

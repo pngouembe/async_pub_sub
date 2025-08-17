@@ -4,4 +4,8 @@ mod subscriber_middlewares;
 
 pub use subscriber_impl::SubscriberImpl;
 pub use subscriber_trait::{SubscriberWrapper, Subscriber};
-pub use subscriber_middlewares::{DebuggingSubscriberLayer, LoggingSubscriberLayer, SubscriberBuilder};
+pub use subscriber_middlewares::{
+    DebuggingSubscriberLayer, LoggingSubscriberLayer, SubscriberBuilder, SubscriberMapLayer,
+    SubscriberMapSubscriber, SubscriberRequestMapLayer, SubscriberRequestMapSubscriber,
+    SubscriberRequestMapWrapper,
+};

@@ -2,7 +2,10 @@ use std::{fmt::Debug, pin::Pin};
 
 use futures::{FutureExt, Stream, StreamExt, future::BoxFuture};
 
-use crate::{Layer, Publisher, Result, Subscriber, utils::forwarder::forwarder_trait::Forwarder};
+use crate::{
+    Layer, Publisher, PublisherWrapper, Result, Subscriber,
+    utils::forwarder::forwarder_trait::Forwarder,
+};
 
 /// A middleware layer that adds debug logging capabilities to a publisher.
 /// When messages are published, it will log them using the debug format.
@@ -11,8 +14,8 @@ pub struct DebuggingForwarderLayer;
 impl<F> Layer<F> for DebuggingForwarderLayer
 where
     F: Forwarder + Send,
-    <F as Subscriber>::Message: Debug,
-    <F as Publisher>::Message: Debug,
+    <F as Subscriber>::InputMessage: Debug,
+    <F as Publisher>::InputMessage: Debug,
 {
     type LayerType = DebugForwarder<F>;
 
@@ -40,10 +43,12 @@ where
 impl<F> Publisher for DebugForwarder<F>
 where
     F: Forwarder,
-    <F as Publisher>::Message: Debug,
+    <F as Publisher>::OutputMessage: Debug,
+    <F as Publisher>::InputMessage: Debug,
     Self: Sync,
 {
-    type Message = <F as Publisher>::Message;
+    type InputMessage = <F as Publisher>::InputMessage;
+    type OutputMessage = <F as Publisher>::OutputMessage;
 
     /// Returns the name of the underlying publisher
     fn get_name(&self) -> &'static str {
@@ -56,7 +61,7 @@ where
     /// * `message` - The message to publish
     ///
     /// Logs the message in the format: "[publisher_name] -> [subscriber_name]: message_debug_format"
-    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Self::InputMessage) -> BoxFuture<'_, Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
             let result = self.forwarder.publish(message).await;
@@ -80,7 +85,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>> {
         self.subscriber_name = Some(subscriber_name);
 
         let publisher_name = Publisher::get_name(&self);
@@ -88,16 +93,17 @@ where
         self.forwarder
             .get_message_stream(subscriber_name)
             .map(|stream| {
-                let stream: Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>> =
-                    Box::pin(stream.map(move |message| {
-                        log::info!(
-                            "[{}] -> [{}]: {:?}",
-                            publisher_name,
-                            subscriber_name,
-                            message
-                        );
+                let stream: Pin<
+                    Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>,
+                > = Box::pin(stream.map(move |message| {
+                    log::info!(
+                        "[{}] -> [{}]: {:?}",
+                        publisher_name,
+                        subscriber_name,
                         message
-                    }));
+                    );
+                    message
+                }));
 
                 stream
             })
@@ -108,20 +114,22 @@ impl<F> Subscriber for DebugForwarder<F>
 where
     F: Forwarder,
 {
-    type Message = <F as Subscriber>::Message;
+    type InputMessage = <F as Subscriber>::InputMessage;
+    type OutputMessage = <F as Subscriber>::OutputMessage;
 
     fn get_name(&self) -> &'static str {
         Subscriber::get_name(&self.forwarder)
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         self.forwarder.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> BoxFuture<Self::Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Self::OutputMessage> {
         self.forwarder.receive()
     }
 }
@@ -129,7 +137,7 @@ where
 impl<F> Forwarder for DebugForwarder<F>
 where
     F: Forwarder + Sync,
-    <F as Publisher>::Message: Debug,
-    <F as Subscriber>::Message: Debug + Send + Sync + 'static,
+    <F as Publisher>::OutputMessage: Debug,
+    <F as Publisher>::InputMessage: Debug,
 {
 }

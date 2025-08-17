@@ -30,8 +30,11 @@ pub trait IpcRequestSubscriber {
     fn get_name(&self) -> &'static str;
     fn receive_request(
         &mut self,
-    ) -> BoxFuture<(
-        Bytes,
-        impl FnOnce(Bytes) -> BoxFuture<'static, ()> + Send + 'static,
-    )>;
+    ) -> BoxFuture<
+        '_,
+        (
+            Bytes,
+            impl FnOnce(Bytes) -> BoxFuture<'static, ()> + Send + 'static,
+        ),
+    >;
 }

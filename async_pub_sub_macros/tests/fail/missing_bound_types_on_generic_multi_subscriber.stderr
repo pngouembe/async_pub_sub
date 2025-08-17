@@ -1,10 +1,32 @@
-error[E0119]: conflicting implementations of trait `SubscriberWrapper<<_ as Subscriber>::Message>` for type `TestSubscriber<_, _>`
- --> tests/fail/missing_bound_types_on_generic_multi_subscriber.rs:6:10
-  |
-6 | #[derive(DeriveSubscriber)]
-  |          ^^^^^^^^^^^^^^^^
-  |          |
-  |          first implementation here
-  |          conflicting implementation for `TestSubscriber<_, _>`
-  |
-  = note: this error originates in the derive macro `DeriveSubscriber` (in Nightly builds, run with -Z macro-backtrace for more info)
+error: Multiple generic subscribers detected without explicit message type constraints, which would create conflicting trait implementations.
+
+       Tip: When using multiple generic subscribers, you must specify explicit message types to avoid conflicts:
+
+       Instead of:
+         struct MyStruct<A, B>
+         where
+             A: Subscriber,
+             B: Subscriber,
+
+       Use one of these approaches:
+         1. Explicit message type constraints:
+            struct MyStruct<A, B>
+            where
+                A: Subscriber<InputMessage = i32, OutputMessage = String>,
+                B: Subscriber<InputMessage = bool, OutputMessage = f64>,
+
+         2. Use #[subscriber] attributes with explicit types:
+            struct MyStruct {
+                #[subscriber(i32, String)] field_a: A,
+                #[subscriber(bool, f64)] field_b: B,
+            }
+  --> tests/fail/missing_bound_types_on_generic_multi_subscriber.rs:7:1
+   |
+7  | / struct TestSubscriber<SubA, SubB>
+8  | | where
+9  | |     SubA: Subscriber,
+10 | |     SubB: Subscriber,
+...  |
+13 | |     subscriber_b: SubB,
+14 | | }
+   | |_^

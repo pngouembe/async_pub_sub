@@ -8,7 +8,7 @@ struct LoggingPublisherLayer;
 impl<P> Layer<P> for LoggingPublisherLayer
 where
     P: Publisher + Send,
-    P::Message: Display,
+    P::InputMessage: Display,
 {
     type LayerType = LoggingPublisher<P>;
 
@@ -31,15 +31,17 @@ where
 impl<P> Publisher for LoggingPublisher<P>
 where
     P: Publisher,
-    P::Message: Display,
+    P::InputMessage: Display,
     Self: Sync,
 {
-    type Message = P::Message;
+    type InputMessage = P::InputMessage;
+    type OutputMessage = P::OutputMessage;
+
     fn get_name(&self) -> &'static str {
         self.publisher.get_name()
     }
 
-    fn publish(&self, message: Self::Message) -> BoxFuture<async_pub_sub::Result<()>> {
+    fn publish(&self, message: Self::InputMessage) -> BoxFuture<'_, async_pub_sub::Result<()>> {
         async move {
             let message_str = format!("{}", &message);
             let result = self.publisher.publish(message).await;
@@ -58,7 +60,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>> {
         self.subscriber_name = Some(subscriber_name);
         self.publisher.get_message_stream(subscriber_name)
     }

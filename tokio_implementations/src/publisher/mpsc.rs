@@ -68,13 +68,14 @@ impl<Message> Publisher for MpscPublisher<Message>
 where
     Message: Send,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn publish(&self, message: Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Message) -> BoxFuture<'_, Result<()>> {
         MpscPublisher::publish(self, message).boxed()
     }
 

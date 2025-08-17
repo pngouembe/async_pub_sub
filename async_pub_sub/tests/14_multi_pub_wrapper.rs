@@ -8,22 +8,30 @@ struct MultiPub {
     publisher_b: PublisherImpl<String>,
 }
 
-impl PublisherWrapper<i32> for MultiPub {
-    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = i32> {
+impl PublisherWrapper<i32, i32> for MultiPub {
+    fn get_publisher(
+        &self,
+    ) -> &impl async_pub_sub::Publisher<InputMessage = i32, OutputMessage = i32> {
         &self.publisher_a
     }
 
-    fn get_publisher_mut(&mut self) -> &mut dyn async_pub_sub::Publisher<Message = i32> {
+    fn get_publisher_mut(
+        &mut self,
+    ) -> &mut impl async_pub_sub::Publisher<InputMessage = i32, OutputMessage = i32> {
         &mut self.publisher_a
     }
 }
 
-impl PublisherWrapper<String> for MultiPub {
-    fn get_publisher(&self) -> &dyn async_pub_sub::Publisher<Message = String> {
+impl PublisherWrapper<String, String> for MultiPub {
+    fn get_publisher(
+        &self,
+    ) -> &impl async_pub_sub::Publisher<InputMessage = String, OutputMessage = String> {
         &self.publisher_b
     }
 
-    fn get_publisher_mut(&mut self) -> &mut dyn async_pub_sub::Publisher<Message = String> {
+    fn get_publisher_mut(
+        &mut self,
+    ) -> &mut impl async_pub_sub::Publisher<InputMessage = String, OutputMessage = String> {
         &mut self.publisher_b
     }
 }
@@ -43,8 +51,10 @@ async fn test_multi_pub() -> Result<()> {
     let mut subscriber2 = SubscriberImpl::<String>::new("subscriber2");
 
     let mut publisher = MultiPub::new();
-    subscriber1.subscribe_to(PublisherWrapper::<i32>::get_publisher_mut(&mut publisher))?;
-    subscriber2.subscribe_to(PublisherWrapper::<String>::get_publisher_mut(
+    subscriber1.subscribe_to(PublisherWrapper::<i32, i32>::get_publisher_mut(
+        &mut publisher,
+    ))?;
+    subscriber2.subscribe_to(PublisherWrapper::<String, String>::get_publisher_mut(
         &mut publisher,
     ))?;
 

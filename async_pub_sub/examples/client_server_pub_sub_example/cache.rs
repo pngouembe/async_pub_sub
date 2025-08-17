@@ -1,7 +1,7 @@
 use async_pub_sub::{
     DebuggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl, SubscriberImpl,
 };
-use async_pub_sub_macros::{rpc_interface, DerivePublisher, DeriveSubscriber};
+use async_pub_sub_macros::{DerivePublisher, DeriveSubscriber, rpc_interface};
 
 use crate::{
     persistency::{PersistencyInterface, PersistencyInterfaceClient, PersistencyInterfaceMessage},

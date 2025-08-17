@@ -11,7 +11,7 @@ struct RpcServer<S> {
 
 impl<S> RpcServer<S>
 where
-    S: Subscriber<Message = Functions>,
+    S: Subscriber<OutputMessage = Functions>,
 {
     pub fn new(subscriber: S) -> Self {
         Self { subscriber }
@@ -67,15 +67,15 @@ async fn test_rpc_server() -> async_pub_sub::Result<()> {
     tokio::spawn(async move { rpc_server.run().await.unwrap() });
 
     // -- Exec
-
-    let (add_one_request, add_one_response) = RequestImpl::new(42).take_response();
+    let mut add_one_request = RequestImpl::new(42);
+    let add_one_response = add_one_request.take_response().unwrap();
     publisher
         .publish(Functions::AddOne(add_one_request))
         .await?;
     let add_one_response = add_one_response.await?;
 
-    let (prefix_with_bar_request, prefix_with_bar_response) =
-        RequestImpl::new("hello".to_string()).take_response();
+    let mut prefix_with_bar_request = RequestImpl::new("hello".to_string());
+    let prefix_with_bar_response = prefix_with_bar_request.take_response().unwrap();
     publisher
         .publish(Functions::PrefixWithBar(prefix_with_bar_request))
         .await?;

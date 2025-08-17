@@ -1,4 +1,5 @@
 use async_pub_sub::{PublisherImpl, Request, Result, SubscriberImpl};
+use futures::FutureExt;
 
 struct CustomRequest<Req, Rsp> {
     content: Option<Req>,
@@ -20,23 +21,18 @@ impl<Req, Rsp> Request for CustomRequest<Req, Rsp> {
     type SentResponse = Rsp;
 
     fn take_response(
-        self,
-    ) -> (
-        Self,
-        futures::future::BoxFuture<'static, Result<Self::Response>>,
-    ) {
-        todo!()
+        &mut self,
+    ) -> Option<futures::future::BoxFuture<'static, Result<Self::Response>>> {
+        Some(async move { todo!() }.boxed())
     }
 
     fn take_content(&mut self) -> Option<Self::Content> {
         self.content.take()
     }
 
-    fn respond(self, response: Self::SentResponse) -> impl Future<Output = Result<()>> {
-        async move {
-            (self.response_callback)(response);
-            Ok(())
-        }
+    async fn respond(self, response: Self::SentResponse) -> Result<()> {
+        (self.response_callback)(response);
+        Ok(())
     }
 }
 

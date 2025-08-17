@@ -8,12 +8,47 @@ pub trait RpcInterface {
     async fn get_toto(&self) -> String;
     async fn set_tata(&mut self, tata: String);
 }
-pub enum RpcInterfaceMessage {
-    AddOne(async_pub_sub::RequestImpl<i32, i32>),
-    Add(async_pub_sub::RequestImpl<(i32, i32), i32>),
-    PrefixWithBar(async_pub_sub::RequestImpl<String, String>),
-    GetToto(async_pub_sub::RequestImpl<(), String>),
-    SetTata(async_pub_sub::RequestImpl<String, ()>),
+pub enum RpcInterfaceContent {
+    AddOne(i32),
+    Add((i32, i32)),
+    PrefixWithBar(String),
+    GetToto(()),
+    SetTata(String),
+}
+#[automatically_derived]
+impl ::core::fmt::Debug for RpcInterfaceContent {
+    #[inline]
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            RpcInterfaceContent::AddOne(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "AddOne", &__self_0)
+            }
+            RpcInterfaceContent::Add(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Add", &__self_0)
+            }
+            RpcInterfaceContent::PrefixWithBar(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "PrefixWithBar",
+                    &__self_0,
+                )
+            }
+            RpcInterfaceContent::GetToto(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "GetToto",
+                    &__self_0,
+                )
+            }
+            RpcInterfaceContent::SetTata(__self_0) => {
+                ::core::fmt::Formatter::debug_tuple_field1_finish(
+                    f,
+                    "SetTata",
+                    &__self_0,
+                )
+            }
+        }
+    }
 }
 pub enum RpcInterfaceResponse {
     AddOne(i32),
@@ -21,40 +56,6 @@ pub enum RpcInterfaceResponse {
     PrefixWithBar(String),
     GetToto(String),
     SetTata(()),
-}
-#[automatically_derived]
-impl ::core::marker::StructuralPartialEq for RpcInterfaceResponse {}
-#[automatically_derived]
-impl ::core::cmp::PartialEq for RpcInterfaceResponse {
-    #[inline]
-    fn eq(&self, other: &RpcInterfaceResponse) -> bool {
-        let __self_discr = ::core::intrinsics::discriminant_value(self);
-        let __arg1_discr = ::core::intrinsics::discriminant_value(other);
-        __self_discr == __arg1_discr
-            && match (self, other) {
-                (
-                    RpcInterfaceResponse::AddOne(__self_0),
-                    RpcInterfaceResponse::AddOne(__arg1_0),
-                ) => __self_0 == __arg1_0,
-                (
-                    RpcInterfaceResponse::Add(__self_0),
-                    RpcInterfaceResponse::Add(__arg1_0),
-                ) => __self_0 == __arg1_0,
-                (
-                    RpcInterfaceResponse::PrefixWithBar(__self_0),
-                    RpcInterfaceResponse::PrefixWithBar(__arg1_0),
-                ) => __self_0 == __arg1_0,
-                (
-                    RpcInterfaceResponse::GetToto(__self_0),
-                    RpcInterfaceResponse::GetToto(__arg1_0),
-                ) => __self_0 == __arg1_0,
-                (
-                    RpcInterfaceResponse::SetTata(__self_0),
-                    RpcInterfaceResponse::SetTata(__arg1_0),
-                ) => __self_0 == __arg1_0,
-                _ => unsafe { ::core::intrinsics::unreachable() }
-            }
-    }
 }
 #[automatically_derived]
 impl ::core::fmt::Debug for RpcInterfaceResponse {
@@ -91,145 +92,33 @@ impl ::core::fmt::Debug for RpcInterfaceResponse {
         }
     }
 }
-impl async_pub_sub::Request for RpcInterfaceMessage {
-    type Content = RpcInterfaceMessage;
-    type Response = RpcInterfaceResponse;
-    type SentResponse = RpcInterfaceResponse;
-    fn take_response(
-        self,
-    ) -> (
-        Self,
-        async_pub_sub::futures::future::BoxFuture<
-            'static,
-            async_pub_sub::Result<Self::Response>,
-        >,
-    ) {
-        use async_pub_sub::futures::FutureExt;
-        match self {
-            RpcInterfaceMessage::AddOne(request) => {
-                let (request, response_future) = request.take_response();
-                let response_future = async move {
-                    let response = response_future.await?;
-                    Ok(RpcInterfaceResponse::AddOne(response))
-                }
-                    .boxed();
-                (RpcInterfaceMessage::AddOne(request), response_future)
-            }
-            RpcInterfaceMessage::Add(request) => {
-                let (request, response_future) = request.take_response();
-                let response_future = async move {
-                    let response = response_future.await?;
-                    Ok(RpcInterfaceResponse::Add(response))
-                }
-                    .boxed();
-                (RpcInterfaceMessage::Add(request), response_future)
-            }
-            RpcInterfaceMessage::PrefixWithBar(request) => {
-                let (request, response_future) = request.take_response();
-                let response_future = async move {
-                    let response = response_future.await?;
-                    Ok(RpcInterfaceResponse::PrefixWithBar(response))
-                }
-                    .boxed();
-                (RpcInterfaceMessage::PrefixWithBar(request), response_future)
-            }
-            RpcInterfaceMessage::GetToto(request) => {
-                let (request, response_future) = request.take_response();
-                let response_future = async move {
-                    let response = response_future.await?;
-                    Ok(RpcInterfaceResponse::GetToto(response))
-                }
-                    .boxed();
-                (RpcInterfaceMessage::GetToto(request), response_future)
-            }
-            RpcInterfaceMessage::SetTata(request) => {
-                let (request, response_future) = request.take_response();
-                let response_future = async move {
-                    let response = response_future.await?;
-                    Ok(RpcInterfaceResponse::SetTata(response))
-                }
-                    .boxed();
-                (RpcInterfaceMessage::SetTata(request), response_future)
-            }
-        }
-    }
-    fn take_content(&mut self) -> Option<Self::Content> {
-        ::core::panicking::panic("not implemented")
-    }
-    fn respond(
-        self,
-        response: Self::SentResponse,
-    ) -> impl std::future::Future<Output = async_pub_sub::Result<()>> {
-        async move {
-            match self {
-                RpcInterfaceMessage::AddOne(request) => {
-                    let RpcInterfaceResponse::AddOne(response) = response else {
-                        {
-                            ::core::panicking::panic_fmt(
-                                format_args!("Expected {0} response", "AddOne"),
-                            );
-                        };
-                    };
-                    request.respond(response).await
-                }
-                RpcInterfaceMessage::Add(request) => {
-                    let RpcInterfaceResponse::Add(response) = response else {
-                        {
-                            ::core::panicking::panic_fmt(
-                                format_args!("Expected {0} response", "Add"),
-                            );
-                        };
-                    };
-                    request.respond(response).await
-                }
-                RpcInterfaceMessage::PrefixWithBar(request) => {
-                    let RpcInterfaceResponse::PrefixWithBar(response) = response else {
-                        {
-                            ::core::panicking::panic_fmt(
-                                format_args!("Expected {0} response", "PrefixWithBar"),
-                            );
-                        };
-                    };
-                    request.respond(response).await
-                }
-                RpcInterfaceMessage::GetToto(request) => {
-                    let RpcInterfaceResponse::GetToto(response) = response else {
-                        {
-                            ::core::panicking::panic_fmt(
-                                format_args!("Expected {0} response", "GetToto"),
-                            );
-                        };
-                    };
-                    request.respond(response).await
-                }
-                RpcInterfaceMessage::SetTata(request) => {
-                    let RpcInterfaceResponse::SetTata(response) = response else {
-                        {
-                            ::core::panicking::panic_fmt(
-                                format_args!("Expected {0} response", "SetTata"),
-                            );
-                        };
-                    };
-                    request.respond(response).await
-                }
-            }
-        }
-    }
-}
-pub struct RpcInterfaceClient {
-    #[publisher(RpcInterfaceMessage)]
+pub type RpcInterfaceMessage = async_pub_sub::RequestImpl<
+    RpcInterfaceContent,
+    RpcInterfaceResponse,
+>;
+pub struct RpcInterfaceClient<OutputMessage = RpcInterfaceMessage>
+where
+    OutputMessage: Send + 'static,
+{
     pub publisher: Box<
-        dyn async_pub_sub::Publisher<Message = RpcInterfaceMessage> + Send,
+        dyn async_pub_sub::Publisher<
+            InputMessage = RpcInterfaceMessage,
+            OutputMessage = OutputMessage,
+        > + Send,
     >,
 }
-impl async_pub_sub::Publisher for RpcInterfaceClient {
-    type Message = RpcInterfaceMessage;
+impl<OutputMessage> async_pub_sub::Publisher for RpcInterfaceClient<OutputMessage>
+where
+    OutputMessage: Send + 'static,
+{
+    type InputMessage = RpcInterfaceMessage;
+    type OutputMessage = OutputMessage;
     fn get_name(&self) -> &'static str {
         async_pub_sub::Publisher::get_name(&self.publisher)
     }
     fn publish(
         &self,
-        message: Self::Message,
+        message: Self::InputMessage,
     ) -> async_pub_sub::futures::future::BoxFuture<async_pub_sub::Result<()>> {
         async_pub_sub::Publisher::publish(&self.publisher, message)
     }
@@ -240,7 +129,7 @@ impl async_pub_sub::Publisher for RpcInterfaceClient {
         std::pin::Pin<
             Box<
                 dyn async_pub_sub::futures::Stream<
-                    Item = Self::Message,
+                    Item = Self::OutputMessage,
                 > + Send + Sync + 'static,
             >,
         >,
@@ -251,30 +140,37 @@ impl async_pub_sub::Publisher for RpcInterfaceClient {
         )
     }
 }
-impl RpcInterfaceClient {
+impl<OutputMessage> RpcInterfaceClient<OutputMessage>
+where
+    OutputMessage: Send + 'static,
+{
     pub fn new<P>(publisher: P) -> Self
     where
-        P: async_pub_sub::Publisher<Message = RpcInterfaceMessage> + Send + 'static,
+        P: async_pub_sub::Publisher<
+                InputMessage = RpcInterfaceMessage,
+                OutputMessage = OutputMessage,
+            > + Send + 'static,
     {
         Self {
             publisher: Box::new(publisher),
         }
     }
 }
-impl async_pub_sub::Requester for RpcInterfaceClient
+impl<OutputMessage> async_pub_sub::Requester for RpcInterfaceClient<OutputMessage>
 where
+    OutputMessage: Send + 'static,
     RpcInterfaceMessage: async_pub_sub::Request,
 {
     fn request(
         &self,
-        request: Self::Message,
+        mut request: Self::InputMessage,
     ) -> impl std::future::Future<
         Output = async_pub_sub::Result<
-            <Self::Message as async_pub_sub::Request>::Response,
+            <Self::InputMessage as async_pub_sub::Request>::Response,
         >,
     > {
         use async_pub_sub::Request;
-        let (request, response) = request.take_response();
+        let response = request.take_response().expect("failed to get response future");
         let publication_future = self.publisher.publish(request);
         async move {
             publication_future.await?;
@@ -282,11 +178,13 @@ where
         }
     }
 }
-impl RpcInterface for RpcInterfaceClient {
-    fn add_one(&self, value: i32) -> async_pub_sub::futures::future::BoxFuture<i32> {
-        let request = RpcInterfaceMessage::AddOne(
-            async_pub_sub::RequestImpl::new(value),
-        );
+impl<OutputMessage> RpcInterface for RpcInterfaceClient<OutputMessage>
+where
+    OutputMessage: Send + 'static,
+{
+    fn add_one(&self, value: i32) -> async_pub_sub::futures::future::BoxFuture<'_, i32> {
+        let content = RpcInterfaceContent::AddOne(value);
+        let request = async_pub_sub::RequestImpl::new(content);
         use async_pub_sub::Requester;
         let response = self.request(request);
         async_pub_sub::futures::FutureExt::boxed(async move {
@@ -309,10 +207,9 @@ impl RpcInterface for RpcInterfaceClient {
         &self,
         left: i32,
         right: i32,
-    ) -> async_pub_sub::futures::future::BoxFuture<i32> {
-        let request = RpcInterfaceMessage::Add(
-            async_pub_sub::RequestImpl::new((left, right)),
-        );
+    ) -> async_pub_sub::futures::future::BoxFuture<'_, i32> {
+        let content = RpcInterfaceContent::Add((left, right));
+        let request = async_pub_sub::RequestImpl::new(content);
         use async_pub_sub::Requester;
         let response = self.request(request);
         async_pub_sub::futures::FutureExt::boxed(async move {
@@ -334,10 +231,9 @@ impl RpcInterface for RpcInterfaceClient {
     fn prefix_with_bar(
         &self,
         string: String,
-    ) -> async_pub_sub::futures::future::BoxFuture<String> {
-        let request = RpcInterfaceMessage::PrefixWithBar(
-            async_pub_sub::RequestImpl::new(string),
-        );
+    ) -> async_pub_sub::futures::future::BoxFuture<'_, String> {
+        let content = RpcInterfaceContent::PrefixWithBar(string);
+        let request = async_pub_sub::RequestImpl::new(content);
         use async_pub_sub::Requester;
         let response = self.request(request);
         async_pub_sub::futures::FutureExt::boxed(async move {
@@ -356,8 +252,9 @@ impl RpcInterface for RpcInterfaceClient {
             actual_response
         })
     }
-    fn get_toto(&self) -> async_pub_sub::futures::future::BoxFuture<String> {
-        let request = RpcInterfaceMessage::GetToto(async_pub_sub::RequestImpl::new(()));
+    fn get_toto(&self) -> async_pub_sub::futures::future::BoxFuture<'_, String> {
+        let content = RpcInterfaceContent::GetToto(());
+        let request = async_pub_sub::RequestImpl::new(content);
         use async_pub_sub::Requester;
         let response = self.request(request);
         async_pub_sub::futures::FutureExt::boxed(async move {
@@ -379,10 +276,9 @@ impl RpcInterface for RpcInterfaceClient {
     fn set_tata(
         &mut self,
         tata: String,
-    ) -> async_pub_sub::futures::future::BoxFuture<()> {
-        let request = RpcInterfaceMessage::SetTata(
-            async_pub_sub::RequestImpl::new(tata),
-        );
+    ) -> async_pub_sub::futures::future::BoxFuture<'_, ()> {
+        let content = RpcInterfaceContent::SetTata(tata);
+        let request = async_pub_sub::RequestImpl::new(content);
         use async_pub_sub::Requester;
         let response = self.request(request);
         async_pub_sub::futures::FutureExt::boxed(async move {
@@ -402,54 +298,66 @@ impl RpcInterface for RpcInterfaceClient {
         })
     }
 }
-pub trait RpcInterfaceServer: async_pub_sub::SubscriberWrapper<
-        RpcInterfaceMessage,
-    > + RpcInterface {
+pub trait RpcInterfaceServer<
+    Input,
+    Output,
+>: RpcInterface + async_pub_sub::SubscriberWrapper<Input, Output>
+where
+    Input: Send + 'static,
+    Output: async_pub_sub::Request<
+            Content = RpcInterfaceContent,
+            SentResponse = RpcInterfaceResponse,
+        > + Send + 'static,
+    Output::Response: Send,
+{
     async fn run(&mut self) {
         loop {
             let request = self.receive().await;
             self.handle_request(request).await;
         }
     }
-    async fn handle_request(&mut self, mut request: RpcInterfaceMessage) {
-        match request {
-            RpcInterfaceMessage::AddOne(mut req) => {
-                use async_pub_sub::Request;
-                let content = req.take_content().expect("failed to get content");
-                let response = <Self as RpcInterface>::add_one(self, content).await;
-                req.respond(response).await.expect("failed to send response");
+    async fn handle_request(&mut self, mut req: Output) {
+        use async_pub_sub::Request;
+        let content = req.take_content().expect("failed to get content");
+        match content {
+            RpcInterfaceContent::AddOne(params) => {
+                let response = <Self as RpcInterface>::add_one(self, params).await;
+                let response_content = RpcInterfaceResponse::AddOne(response);
+                req.respond(response_content).await.expect("failed to send response");
             }
-            RpcInterfaceMessage::Add(mut req) => {
-                use async_pub_sub::Request;
-                let content = req.take_content().expect("failed to get content");
-                let (left, right) = content;
+            RpcInterfaceContent::Add(params) => {
+                let (left, right) = params;
                 let response = <Self as RpcInterface>::add(self, left, right).await;
-                req.respond(response).await.expect("failed to send response");
+                let response_content = RpcInterfaceResponse::Add(response);
+                req.respond(response_content).await.expect("failed to send response");
             }
-            RpcInterfaceMessage::PrefixWithBar(mut req) => {
-                use async_pub_sub::Request;
-                let content = req.take_content().expect("failed to get content");
-                let response = <Self as RpcInterface>::prefix_with_bar(self, content)
+            RpcInterfaceContent::PrefixWithBar(params) => {
+                let response = <Self as RpcInterface>::prefix_with_bar(self, params)
                     .await;
-                req.respond(response).await.expect("failed to send response");
+                let response_content = RpcInterfaceResponse::PrefixWithBar(response);
+                req.respond(response_content).await.expect("failed to send response");
             }
-            RpcInterfaceMessage::GetToto(mut req) => {
-                use async_pub_sub::Request;
-                let content = req.take_content().expect("failed to get content");
+            RpcInterfaceContent::GetToto(params) => {
                 let response = <Self as RpcInterface>::get_toto(self).await;
-                req.respond(response).await.expect("failed to send response");
+                let response_content = RpcInterfaceResponse::GetToto(response);
+                req.respond(response_content).await.expect("failed to send response");
             }
-            RpcInterfaceMessage::SetTata(mut req) => {
-                use async_pub_sub::Request;
-                let content = req.take_content().expect("failed to get content");
-                let response = <Self as RpcInterface>::set_tata(self, content).await;
-                req.respond(response).await.expect("failed to send response");
+            RpcInterfaceContent::SetTata(params) => {
+                let response = <Self as RpcInterface>::set_tata(self, params).await;
+                let response_content = RpcInterfaceResponse::SetTata(response);
+                req.respond(response_content).await.expect("failed to send response");
             }
         }
     }
 }
-impl<T> RpcInterfaceServer for T
+impl<Input, Output, T> RpcInterfaceServer<Input, Output> for T
 where
-    T: RpcInterface + async_pub_sub::SubscriberWrapper<RpcInterfaceMessage>,
+    T: RpcInterface + async_pub_sub::SubscriberWrapper<Input, Output>,
+    Input: Send + 'static,
+    Output: async_pub_sub::Request<
+            Content = RpcInterfaceContent,
+            SentResponse = RpcInterfaceResponse,
+        > + Send + 'static,
+    Output::Response: Send,
 {}
 fn main() {}

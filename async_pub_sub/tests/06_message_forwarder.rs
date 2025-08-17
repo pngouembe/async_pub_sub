@@ -1,7 +1,8 @@
 use std::{fmt::Display, pin::Pin};
 
 use async_pub_sub::{
-    Publisher, PublisherImpl, Request, RequestImpl, Result, Subscriber, SubscriberImpl,
+    Publisher, PublisherImpl, PublisherWrapper, Request, RequestImpl, Result, Subscriber,
+    SubscriberImpl,
 };
 use futures::{
     FutureExt, Stream, StreamExt,
@@ -34,13 +35,18 @@ impl<Message> Subscriber for LoggingForwarder<Message>
 where
     Message: Display + Send + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn subscribe_to(&mut self, publisher: &mut dyn Publisher<Message = Message>) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         let stream = publisher.get_message_stream(self.name)?;
 
         self.messages.as_mut().unwrap().push(stream);
@@ -48,7 +54,7 @@ where
         Ok(())
     }
 
-    fn receive(&mut self) -> BoxFuture<Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Message> {
         panic!("LoggingForwarder does not implement receive method")
     }
 }
@@ -57,13 +63,14 @@ impl<Message> Publisher for LoggingForwarder<Message>
 where
     Message: Display + Send + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn publish(&self, _message: Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, _message: Message) -> futures::future::BoxFuture<'_, Result<()>> {
         async move { panic!("LoggingForwarder does not implement publish method") }.boxed()
     }
 
@@ -103,7 +110,8 @@ async fn test_message_forwarder() -> Result<()> {
 
     // -- Exec
     let publisher_task = tokio::spawn(async move {
-        let (request, response) = RequestImpl::new(42).take_response();
+        let mut request = RequestImpl::new(42);
+        let response = request.take_response().unwrap();
         publisher
             .publish(request)
             .await

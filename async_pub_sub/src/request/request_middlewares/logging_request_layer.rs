@@ -61,12 +61,12 @@ where
     type Response = R::Response;
     type SentResponse = R::SentResponse;
 
-    fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+    fn take_response(&mut self) -> Option<BoxFuture<'static, Result<Self::Response>>> {
         let request_name = self.request_name;
-        let (request, response_future) = self.request.take_response();
-        
+        let response_future = self.request.take_response()?;
+
         log::info!("[{}] Taking response future", request_name);
-        
+
         let logged_response = async move {
             let response = response_future.await;
             match &response {
@@ -74,15 +74,10 @@ where
                 Err(err) => log::error!("[{}] Response error: {}", request_name, err),
             }
             response
-        }.boxed();
+        }
+        .boxed();
 
-        (
-            Self {
-                request_name,
-                request,
-            },
-            logged_response,
-        )
+        Some(logged_response)
     }
 
     fn take_content(&mut self) -> Option<Self::Content> {

@@ -1,0 +1,9 @@
+error: DerivePublisher macro only supports structs.
+
+       Tip: The macro can only be applied to struct definitions, not enums, unions, or other types. Use `struct MyStruct { ... }` instead.
+ --> tests/fail/derive_publisher_on_enum.rs:4:1
+  |
+4 | / enum InvalidPublisher {
+5 | |     Variant,
+6 | | }
+  | |_^

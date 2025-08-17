@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use async_pub_sub::{
-    Publisher, PublisherImpl, Request, RequestImpl, Result, Subscriber, SubscriberImpl,
+    PublisherImpl, PublisherWrapper, Request, RequestImpl, Result, Subscriber, SubscriberImpl,
 };
 use futures::{FutureExt, future::BoxFuture};
 
@@ -92,20 +92,22 @@ impl Service {
 }
 
 impl Subscriber for Service {
-    type Message = ServiceRequest;
+    type InputMessage = ServiceRequest;
+    type OutputMessage = ServiceRequest;
 
     fn get_name(&self) -> &'static str {
         self.subscriber.get_name()
     }
 
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> Result<()>
+    where
+        P: PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         self.subscriber.subscribe_to(publisher)
     }
 
-    fn receive(&mut self) -> BoxFuture<Self::Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Self::InputMessage> {
         self.subscriber.receive().boxed()
     }
 }
@@ -123,14 +125,16 @@ async fn test_direct_rpc() -> Result<()> {
     });
 
     // -- Exec & Check
-    let (request, response) = RequestImpl::new(Foo(42)).take_response();
+    let mut request = RequestImpl::new(Foo(42));
+    let response = request.take_response().unwrap();
     publisher
         .publish(request.into())
         .await
         .expect("request published successfully");
     assert_eq!(response.await.expect("request successul"), 43);
 
-    let (request, response) = RequestImpl::new(Bar("hello".to_string())).take_response();
+    let mut request = RequestImpl::new(Bar("hello".to_string()));
+    let response = request.take_response().unwrap();
     publisher
         .publish(request.into())
         .await

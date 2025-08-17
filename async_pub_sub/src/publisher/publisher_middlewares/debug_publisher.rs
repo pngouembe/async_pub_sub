@@ -11,7 +11,7 @@ pub struct DebuggingPublisherLayer;
 impl<P> Layer<P> for DebuggingPublisherLayer
 where
     P: Publisher + Send,
-    P::Message: Debug,
+    P::InputMessage: Debug,
 {
     type LayerType = DebugPublisher<P>;
 
@@ -39,10 +39,11 @@ where
 impl<P> Publisher for DebugPublisher<P>
 where
     P: Publisher,
-    P::Message: Debug,
+    P::InputMessage: Debug,
     Self: Sync,
 {
-    type Message = P::Message;
+    type InputMessage = P::InputMessage;
+    type OutputMessage = P::OutputMessage;
 
     /// Returns the name of the underlying publisher
     fn get_name(&self) -> &'static str {
@@ -55,7 +56,7 @@ where
     /// * `message` - The message to publish
     ///
     /// Logs the message in the format: "[publisher_name] -> [subscriber_name]: message_debug_format"
-    fn publish(&self, message: Self::Message) -> BoxFuture<Result<()>> {
+    fn publish(&self, message: Self::InputMessage) -> BoxFuture<'_, Result<()>> {
         async move {
             let message_str = format!("{:?}", &message);
             let result = self.publisher.publish(message).await;
@@ -79,7 +80,7 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Self::Message> + Send + Sync + 'static>>> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Self::OutputMessage> + Send + Sync + 'static>>> {
         self.subscriber_name = Some(subscriber_name);
         self.publisher.get_message_stream(subscriber_name)
     }

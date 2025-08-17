@@ -1,0 +1,14 @@
+error: DeriveSubscriber macro requires that your struct must have at least one field that implements the Subscriber trait or is marked with #[subscriber].
+
+       Tip: You can either:
+         1. Add a field with type that implements Subscriber: `field: SomeSubscriber`
+         2. Add #[subscriber] attribute to a field: `#[subscriber(MessageType)] field: SomeType`
+         3. Add #[subscriber] attribute with input/output types: `#[subscriber(InputType, OutputType)] field: SomeType`
+         4. Use generic constraints: `struct MyStruct<S: Subscriber<InputMessage = i32, OutputMessage = String>>`
+ --> tests/fail/invalid_subscriber_attribute.rs:4:1
+  |
+4 | / struct InvalidAttributeSubscriber {
+5 | |     #[subscriber(i32, String, bool)]  // Too many types in tuple
+6 | |     field: String,
+7 | | }
+  | |_^

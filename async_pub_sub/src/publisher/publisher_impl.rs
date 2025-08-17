@@ -92,7 +92,8 @@ impl<Message> Publisher for PublisherImpl<Message>
 where
     Message: Send + Sync + 'static,
 {
-    type Message = Message;
+    type InputMessage = Message;
+    type OutputMessage = Message;
 
     /// Returns the name of the publisher.
     fn get_name(&self) -> &'static str {
@@ -108,7 +109,7 @@ where
     /// # Returns
     ///
     /// A boxed future that resolves to a Result indicating success or failure
-    fn publish(&self, message: Self::Message) -> futures::future::BoxFuture<Result<()>> {
+    fn publish(&self, message: Self::InputMessage) -> futures::future::BoxFuture<'_, Result<()>> {
         let mut sender = self.sender.clone();
         async move {
             sender
@@ -136,8 +137,9 @@ where
     fn get_message_stream(
         &mut self,
         subscriber_name: &'static str,
-    ) -> Result<std::pin::Pin<Box<dyn futures::Stream<Item = Self::Message> + Send + Sync + 'static>>>
-    {
+    ) -> Result<
+        std::pin::Pin<Box<dyn futures::Stream<Item = Self::InputMessage> + Send + Sync + 'static>>,
+    > {
         let Some(receiver) = self.receiver.take() else {
             return Err(format!(
                 "{} publisher can only be bound to one subscriber (already bound to {})",
@@ -160,9 +162,9 @@ where
 {
     async fn request(
         &self,
-        request: Self::Message,
-    ) -> Result<<Self::Message as Request>::Response> {
-        let (request, response_future) = request.take_response();
+        mut request: Self::InputMessage,
+    ) -> Result<<Self::InputMessage as Request>::Response> {
+        let response_future = request.take_response().ok_or("Request already consumed")?;
         self.publish(request).await?;
         response_future.await
     }

@@ -1,12 +1,11 @@
-use crate::{IpcRequestSubscriber, Result};
+use crate::Result;
 use async_nats::Message;
-use async_pub_sub::{Publisher, Request, Subscriber};
+use async_pub_sub::{Request, Subscriber};
 use bytes::Bytes;
 use futures::{FutureExt, StreamExt, future::BoxFuture};
 
 pub struct NatsSubscriber<T> {
     name: &'static str,
-    nats_client: async_nats::Client,
     nats_subscriber: async_nats::Subscriber,
     _marker: std::marker::PhantomData<T>,
 }
@@ -25,7 +24,6 @@ impl<T> NatsSubscriber<T> {
             .await?;
         Ok(Self {
             name,
-            nats_client,
             nats_subscriber,
             _marker: std::marker::PhantomData,
         })
@@ -36,20 +34,22 @@ impl<T> Subscriber for NatsSubscriber<T>
 where
     T: Send + Sync,
 {
-    type Message = Bytes;
+    type InputMessage = Bytes;
+    type OutputMessage = Bytes;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        _publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> async_pub_sub::Result<()> {
+    fn subscribe_to<P, Input>(&mut self, _publisher: &mut P) -> async_pub_sub::Result<()>
+    where
+        P: async_pub_sub::PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         Err("NatsSubscriber cannot subscribe to publishers, it can only be used to receive messages from the network.".into())
     }
 
-    fn receive(&mut self) -> futures::future::BoxFuture<Self::Message> {
+    fn receive(&mut self) -> futures::future::BoxFuture<'_, Self::InputMessage> {
         async move {
             let msg = self
                 .nats_subscriber
@@ -57,55 +57,6 @@ where
                 .await
                 .expect("Should receive a message");
             msg.payload
-        }
-        .boxed()
-    }
-}
-
-impl<T> IpcRequestSubscriber for NatsSubscriber<T>
-where
-    T: Send + Sync + 'static,
-{
-    fn get_name(&self) -> &'static str {
-        self.name
-    }
-
-    fn receive_request(
-        &mut self,
-    ) -> BoxFuture<(
-        Bytes,
-        impl FnOnce(Bytes) -> BoxFuture<'static, ()> + Send + 'static,
-    )> {
-        let future_message = self.nats_subscriber.next();
-        let nats_client = self.nats_client.clone();
-        let name = self.name;
-        async move {
-            let msg = future_message.await.expect("Should receive a message");
-            let content = msg.payload;
-            log::debug!(
-                "[{}] Received request from subject '{}': {:?}",
-                name,
-                msg.subject,
-                content
-            );
-            (content, move |response| {
-                async move {
-                    if let Some(subject) = msg.reply {
-                        log::debug!(
-                            "[{}] Sending response to subject '{}': {:?}",
-                            name,
-                            subject,
-                            response
-                        );
-                        nats_client
-                            .publish(subject, response)
-                            .await
-                            .expect("Failed to publish response");
-                    }
-                    // Handle response logic here if needed
-                }
-                .boxed()
-            })
         }
         .boxed()
     }
@@ -139,26 +90,28 @@ impl<T> NatsRequestSubscriber<T> {
 }
 
 impl<T> Subscriber for NatsRequestSubscriber<T> {
-    type Message = NatsRequest;
+    type InputMessage = NatsRequest;
+    type OutputMessage = NatsRequest;
 
     fn get_name(&self) -> &'static str {
         self.name
     }
 
-    fn subscribe_to(
-        &mut self,
-        _publisher: &mut dyn Publisher<Message = Self::Message>,
-    ) -> async_pub_sub::Result<()> {
+    fn subscribe_to<P, Input>(&mut self, _publisher: &mut P) -> async_pub_sub::Result<()>
+    where
+        P: async_pub_sub::PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         Err("NatsSubscriber cannot subscribe to publishers, it can only be used to receive messages from the network.".into())
     }
 
-    fn receive(&mut self) -> BoxFuture<Self::Message> {
+    fn receive(&mut self) -> BoxFuture<'_, Self::InputMessage> {
         let future_message = self.nats_subscriber.next();
         let nats_client = self.nats_client.clone();
         async move {
             let msg = future_message.await.expect("Should receive a message");
-            let request = NatsRequest::new(msg, nats_client).expect("Failed to create NatsRequest");
-            request
+
+            NatsRequest::new(msg, nats_client).expect("Failed to create NatsRequest")
         }
         .boxed()
     }
@@ -194,15 +147,13 @@ impl Request for NatsRequest {
     type Response = Bytes;
     type SentResponse = Bytes;
 
-    fn take_response(self) -> (Self, BoxFuture<'static, Result<Self::Response>>) {
+    fn take_response(&mut self) -> Option<BoxFuture<'static, Result<Self::Response>>> {
         panic!("NatsRequest does not support take_response");
     }
 
-    fn respond(self, response: Self::SentResponse) -> impl Future<Output = Result<()>> {
-        async move {
-            (self.response)(response).await;
-            Ok(())
-        }
+    async fn respond(self, response: Self::SentResponse) -> Result<()> {
+        (self.response)(response).await;
+        Ok(())
     }
 
     fn take_content(&mut self) -> Option<Self::Content> {

@@ -29,11 +29,11 @@ use syn::parse_macro_input;
 ///     subscriber: S,
 /// }
 ///
-/// // Multiple subscribers
+/// // Multiple subscribers with explicit type constraints
 /// #[derive(DeriveSubscriber)]
 /// struct MultiSubscriber<A, B> where
-///     A: Subscriber<Message = i32>,
-///     B: Subscriber<Message = String>,
+///     A: Subscriber<InputMessage = i32, OutputMessage = i32>,
+///     B: Subscriber<InputMessage = String, OutputMessage = String>,
 /// {
 ///     subscriber_a: A,
 ///     subscriber_b: B,
@@ -70,11 +70,11 @@ pub fn derive_subscriber(input: TokenStream) -> TokenStream {
 ///     publisher: P,
 /// }
 ///
-/// // Multiple publishers
+/// // Multiple publishers with explicit type constraints
 /// #[derive(DerivePublisher)]
 /// struct MultiPublisher<A, B> where
-///     A: Publisher<Message = i32>,
-///     B: Publisher<Message = String>,
+///     A: Publisher<InputMessage = i32, OutputMessage = i32>,
+///     B: Publisher<InputMessage = String, OutputMessage = String>,
 /// {
 ///     publisher_a: A,
 ///     publisher_b: B,

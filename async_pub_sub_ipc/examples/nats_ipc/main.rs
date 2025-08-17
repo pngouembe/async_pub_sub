@@ -65,11 +65,11 @@ async fn main() -> Result<()> {
 async fn pub_sub_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()> {
     let message_publisher = PublisherBuilder::new()
         .layer(SerdeJsonSerializationLayer::new())
-        .publisher(NatsPublisher::<Message>::new("NatsPublisher", &nats_url).await?);
+        .publisher(NatsPublisher::<Message>::new("NatsPublisher", nats_url).await?);
 
     let mut message_subscriber = SubscriberBuilder::new()
         .layer(SerdeJsonDeserializationLayer::<Message>::new())
-        .subscriber(NatsSubscriber::<Message>::new("NatsSubscriber", &nats_url).await?);
+        .subscriber(NatsSubscriber::<Message>::new("NatsSubscriber", nats_url).await?);
 
     if send_first {
         log::info!("[{app_name}-pub-sub] Waiting a second before sending initial message");
@@ -102,7 +102,7 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
         .publisher(
             NatsRequestPublisher::<RequestImpl<Bytes, Bytes>>::new(
                 "NatsRequestPublisher",
-                &nats_url,
+                nats_url,
             )
             .await?,
         );
@@ -110,8 +110,11 @@ async fn rpc_task(app_name: &str, nats_url: &str, send_first: bool) -> Result<()
     let mut request_subscriber = SubscriberBuilder::new()
         .layer(SerdeJsonRequestDeserializationLayer::<String, String>::new())
         .subscriber(
-            NatsSubscriber::<RequestImpl<Bytes, Bytes>>::new("NatsRequestSubscriber", &nats_url)
-                .await?,
+            NatsRequestSubscriber::<RequestImpl<Bytes, Bytes>>::new(
+                "NatsRequestSubscriber",
+                nats_url,
+            )
+            .await?,
         );
 
     if send_first {
@@ -147,7 +150,7 @@ async fn rpc_macros_task(app_name: &str, nats_url: &str, send_first: bool) -> Re
 
     if send_first {
         let publisher = PublisherBuilder::new()
-            .layer(SerdeRequestSerializationLayer::serde_json())
+            .layer(SerdeRequestSerializationLayer::<PingContent, PingResponse>::serde_json())
             .publisher(
                 NatsRequestPublisher::<PingMessage>::new("NatsRequestPublisher", nats_url).await?,
             );
@@ -165,11 +168,9 @@ async fn rpc_macros_task(app_name: &str, nats_url: &str, send_first: bool) -> Re
         }
     } else {
         let subscriber = SubscriberBuilder::new()
-            .layer(
-                SerdeRequestDeserializationLayer::serde_json(),
-            )
+            .layer(SerdeRequestDeserializationLayer::<PingContent, PingResponse>::serde_json())
             .subscriber(
-                NatsRequestSubscriber::<PingMessage>::new("NatsRequestSubscriber", &nats_url)
+                NatsRequestSubscriber::<PingMessage>::new("NatsRequestSubscriber", nats_url)
                     .await?,
             );
         let mut server = NatsServer::new(subscriber);

@@ -11,16 +11,17 @@ mod error;
 pub use error::{Error, Result};
 
 pub use publisher::{
-    DebuggingPublisherLayer, LoggingPublisherLayer, Publisher, PublisherBuilder, PublisherImpl,
+    DebuggingPublisherLayer, LoggingPublisherLayer, MappedPublisher, Publisher, PublisherBuilder,
+    PublisherImpl, PublisherMapLayer, PublisherRequestMapLayer, PublisherRequestMapPublisher,
     PublisherWrapper,
 };
 pub use request::{
-    LoggingRequestLayer, Request, RequestBuilder, RequestImpl, Requester, 
-    ResponseTransformRequest, ResponseTransformRequestLayer,
+    LoggingRequestLayer, MappedRequest, Request, RequestBuilder, RequestImpl, Requester,
 };
 pub use subscriber::{
     DebuggingSubscriberLayer, LoggingSubscriberLayer, Subscriber, SubscriberBuilder,
-    SubscriberImpl, SubscriberWrapper,
+    SubscriberImpl, SubscriberMapLayer, SubscriberMapSubscriber, SubscriberRequestMapLayer,
+    SubscriberRequestMapSubscriber, SubscriberRequestMapWrapper, SubscriberWrapper,
 };
 pub use utils::{DebuggingForwarderLayer, Forwarder, ForwarderBuilder, ForwarderImpl, Layer};
 

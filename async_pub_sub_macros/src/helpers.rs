@@ -5,7 +5,7 @@ use quote::quote;
 pub fn find_pub_sub_types_in_generics(
     trait_name: &str,
     generics: &syn::Generics,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
+) -> HashMap<syn::Ident, (proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let mut pub_sub_types = find_pub_sub_types_in_generic_type_params(trait_name, generics);
     pub_sub_types.extend(find_pub_sub_types_in_where_clauses(trait_name, generics));
     pub_sub_types
@@ -14,7 +14,7 @@ pub fn find_pub_sub_types_in_generics(
 fn find_pub_sub_types_in_generic_type_params(
     trait_name: &str,
     generics: &syn::Generics,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
+) -> HashMap<syn::Ident, (proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     generics
         .type_params()
         .filter_map(|type_param| pub_sub_type_entry_from_type_param_opt(type_param, trait_name))
@@ -24,7 +24,7 @@ fn find_pub_sub_types_in_generic_type_params(
 fn find_pub_sub_types_in_where_clauses(
     trait_name: &str,
     generics: &syn::Generics,
-) -> HashMap<syn::Ident, proc_macro2::TokenStream> {
+) -> HashMap<syn::Ident, (proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     generics
         .where_clause
         .as_ref()
@@ -43,7 +43,7 @@ fn find_pub_sub_types_in_where_clauses(
 pub fn pub_sub_type_entry_from_type_param_opt(
     type_param: &syn::TypeParam,
     trait_name: &str,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
+) -> Option<(syn::Ident, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
     let syn::TypeParam { ident, bounds, .. } = type_param;
 
     let trait_ident = proc_macro2::Ident::new(trait_name, proc_macro2::Span::call_site());
@@ -56,13 +56,15 @@ pub fn pub_sub_type_entry_from_type_param_opt(
         let path = &trait_bound.path;
 
         if path.is_ident(trait_name) {
+            let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+            let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
             return Some((
                 ident.clone(),
-                quote! { <#ident as async_pub_sub::#trait_ident>::Message },
+                (input_message, output_message),
             ));
         }
 
-        let message_type = bounds.iter().find_map(|bound| {
+        let message_types = bounds.iter().find_map(|bound| {
             let syn::TypeParamBound::Trait(trait_bound) = bound else {
                 return None;
             };
@@ -70,25 +72,29 @@ pub fn pub_sub_type_entry_from_type_param_opt(
             let path = &trait_bound.path;
 
             if path.is_ident(trait_name) {
-                return Some(quote! { <#ident as async_pub_sub::#trait_ident>::Message });
+                let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+                let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+                return Some((input_message, output_message));
             }
 
             path.segments
                 .iter()
                 .find_map(message_type_from_path_segment_opt)
-                .or(Some(
-                    quote! { <#ident as async_pub_sub::#trait_ident>::Message },
-                ))
+                .or_else(|| {
+                    let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+                    let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+                    Some((input_message, output_message))
+                })
         })?;
 
-        Some((type_param.ident.clone(), message_type))
+        Some((type_param.ident.clone(), message_types))
     })
 }
 
 pub fn pub_sub_type_entry_from_where_predicate_opt(
     predicate: &syn::WherePredicate,
     trait_name: &str,
-) -> Option<(syn::Ident, proc_macro2::TokenStream)> {
+) -> Option<(syn::Ident, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
     let trait_ident = proc_macro2::Ident::new(trait_name, proc_macro2::Span::call_site());
 
     let syn::WherePredicate::Type(syn::PredicateType {
@@ -104,7 +110,7 @@ pub fn pub_sub_type_entry_from_where_predicate_opt(
 
     let ident = path.get_ident()?;
 
-    let message_type = bounds.iter().find_map(|bound| {
+    let message_types = bounds.iter().find_map(|bound| {
         let syn::TypeParamBound::Trait(trait_bound) = bound else {
             return None;
         };
@@ -112,24 +118,28 @@ pub fn pub_sub_type_entry_from_where_predicate_opt(
         let path = &trait_bound.path;
 
         if path.is_ident(trait_name) {
-            return Some(quote! { <#ident as async_pub_sub::#trait_ident>::Message });
+            let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+            let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+            return Some((input_message, output_message));
         }
 
         path.segments
             .iter()
             .find_map(message_type_from_path_segment_opt)
-            .or(Some(
-                quote! { <#ident as async_pub_sub::#trait_ident>::Message },
-            ))
+            .or_else(|| {
+                let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+                let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+                Some((input_message, output_message))
+            })
     })?;
 
-    Some((ident.clone(), message_type))
+    Some((ident.clone(), message_types))
 }
 
 pub fn message_type_from_path_opt(
     path: &syn::Path,
     trait_name: &str,
-) -> Option<proc_macro2::TokenStream> {
+) -> Option<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let trait_ident = proc_macro2::Ident::new(trait_name, proc_macro2::Span::call_site());
 
     let ident = path.get_ident()?;
@@ -139,39 +149,54 @@ pub fn message_type_from_path_opt(
     }
 
     if path.is_ident(trait_name) {
-        return Some(quote! { <#ident as async_pub_sub::#trait_ident>::Message });
+        let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+        let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+        return Some((input_message, output_message));
     }
 
     path.segments
         .iter()
         .find_map(message_type_from_path_segment_opt)
-        .or(Some(
-            quote! { <#ident as async_pub_sub::#trait_ident>::Message },
-        ))
+        .or_else(|| {
+            let input_message = quote! { <#ident as async_pub_sub::#trait_ident>::InputMessage };
+            let output_message = quote! { <#ident as async_pub_sub::#trait_ident>::OutputMessage };
+            Some((input_message, output_message))
+        })
 }
 
 fn message_type_from_path_segment_opt(
     segment: &syn::PathSegment,
-) -> Option<proc_macro2::TokenStream> {
+) -> Option<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
     let syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) =
         &segment.arguments
     else {
         return None;
     };
 
-    args.iter().find_map(|arg| {
+    let mut input_message = None;
+    let mut output_message = None;
+
+    // Look for InputMessage and OutputMessage associated types
+    for arg in args.iter() {
         let syn::GenericArgument::AssocType(assoc_ty) = arg else {
-            return None;
+            continue;
         };
 
-        if assoc_ty.ident != "Message" {
-            return None;
+        match assoc_ty.ident.to_string().as_str() {
+            "InputMessage" => {
+                let ty = &assoc_ty.ty;
+                input_message = Some(quote! { #ty });
+            }
+            "OutputMessage" => {
+                let ty = &assoc_ty.ty;
+                output_message = Some(quote! { #ty });
+            }
+            _ => {}
         }
+    }
 
-        let syn::Type::Path(syn::TypePath { path, .. }) = &assoc_ty.ty else {
-            return None;
-        };
-
-        path.get_ident().map(|ident| quote! { #ident })
-    })
+    match (input_message, output_message) {
+        (Some(input), Some(output)) => Some((input, output)),
+        _ => None,
+    }
 }

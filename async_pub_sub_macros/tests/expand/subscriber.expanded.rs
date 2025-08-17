@@ -5,17 +5,21 @@ struct TestSubscriberA<A: Subscriber> {
     subscriber_a: A,
 }
 impl<A: Subscriber> async_pub_sub::Subscriber for TestSubscriberA<A> {
-    type Message = <A as async_pub_sub::Subscriber>::Message;
+    type InputMessage = <A as async_pub_sub::Subscriber>::InputMessage;
+    type OutputMessage = <A as async_pub_sub::Subscriber>::OutputMessage;
     fn get_name(&self) -> &'static str {
         async_pub_sub::Subscriber::get_name(&self.subscriber_a)
     }
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn async_pub_sub::Publisher<Message = Self::Message>,
-    ) -> async_pub_sub::Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> async_pub_sub::Result<()>
+    where
+        P: async_pub_sub::PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         async_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_a, publisher)
     }
-    fn receive(&mut self) -> async_pub_sub::futures::future::BoxFuture<Self::Message> {
+    fn receive(
+        &mut self,
+    ) -> async_pub_sub::futures::future::BoxFuture<'_, Self::OutputMessage> {
         async_pub_sub::Subscriber::receive(&mut self.subscriber_a)
     }
 }
@@ -29,17 +33,21 @@ impl<B> async_pub_sub::Subscriber for TestSubscriberB<B>
 where
     B: Subscriber,
 {
-    type Message = <B as async_pub_sub::Subscriber>::Message;
+    type InputMessage = <B as async_pub_sub::Subscriber>::InputMessage;
+    type OutputMessage = <B as async_pub_sub::Subscriber>::OutputMessage;
     fn get_name(&self) -> &'static str {
         async_pub_sub::Subscriber::get_name(&self.subscriber_b)
     }
-    fn subscribe_to(
-        &mut self,
-        publisher: &mut dyn async_pub_sub::Publisher<Message = Self::Message>,
-    ) -> async_pub_sub::Result<()> {
+    fn subscribe_to<P, Input>(&mut self, publisher: &mut P) -> async_pub_sub::Result<()>
+    where
+        P: async_pub_sub::PublisherWrapper<Input, Self::InputMessage>,
+        Input: Send + 'static,
+    {
         async_pub_sub::Subscriber::subscribe_to(&mut self.subscriber_b, publisher)
     }
-    fn receive(&mut self) -> async_pub_sub::futures::future::BoxFuture<Self::Message> {
+    fn receive(
+        &mut self,
+    ) -> async_pub_sub::futures::future::BoxFuture<'_, Self::OutputMessage> {
         async_pub_sub::Subscriber::receive(&mut self.subscriber_b)
     }
 }
